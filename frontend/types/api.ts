@@ -1,0 +1,183 @@
+/**
+ * API Type Definitions
+ * Matches backend Pydantic models
+ */
+
+// ============= Event Models =============
+export interface EventCreate {
+  title: string;
+  description?: string;
+  event_date?: string; // ISO date string
+}
+
+export interface EventRead {
+  id: number;
+  speaker_id: number;
+  title: string;
+  description: string | null;
+  event_date: string | null;
+  public_token: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface EventQRResponse {
+  event_id: number;
+  feedback_url: string;
+  qr_base64: string;
+}
+
+// ============= Feedback Models =============
+export interface FeedbackTextCreate {
+  text: string;
+}
+
+export interface FeedbackResponse {
+  id: number;
+  sentiment: string;
+  confidence: number;
+  decision: string;
+}
+
+export interface EventFeedbackRead {
+  id: number;
+  event_id: number;
+  input_type: string;
+  text_feedback: string | null;
+  audio_path: string | null;
+  sentiment: string | null;
+  confidence: number | null;
+  quality_decision: string | null;
+  quality_flags: string | null;
+  created_at: string;
+}
+
+// ============= Analytics Models =============
+export interface SentimentCount {
+  count: number;
+  percentage: number;
+}
+
+export interface SentimentDistribution {
+  positive: SentimentCount;
+  negative: SentimentCount;
+  neutral: SentimentCount;
+}
+
+export interface QualityBreakdown {
+  accepted: number;
+  flagged: number;
+  rejected: number;
+}
+
+export interface InputTypeBreakdown {
+  text: number;
+  audio: number;
+}
+
+export interface FeedbackCollectionPeriod {
+  start_date: string;
+  end_date: string | null;
+}
+
+export interface EventStats {
+  event_id: number;
+  event_title: string;
+  event_date: string | null;
+  total_feedback: number;
+  sentiment_distribution: SentimentDistribution;
+  quality_breakdown: QualityBreakdown;
+  input_type_breakdown: InputTypeBreakdown;
+  avg_confidence: number;
+  feedback_collection_period: FeedbackCollectionPeriod;
+}
+
+export interface FeedbackByEvent {
+  event_id: number;
+  event_title: string;
+  feedback_count: number;
+}
+
+export interface DashboardStats {
+  total_events: number;
+  active_events: number;
+  total_feedback_count: number;
+  overall_sentiment: SentimentDistribution;
+  avg_confidence: number;
+  feedback_by_event: FeedbackByEvent[];
+}
+
+export interface TrendDataPoint {
+  date: string;
+  positive: number;
+  negative: number;
+  neutral: number;
+  total: number;
+  positive_pct: number;
+  negative_pct: number;
+  neutral_pct: number;
+}
+
+export interface SentimentTrends {
+  event_id: number;
+  total_feedback: number;
+  trends: TrendDataPoint[];
+}
+
+export interface Keyword {
+  word: string;
+  count: number;
+  percentage: number;
+}
+
+export interface TopKeywords {
+  event_id: number;
+  sentiment_filter: string;
+  total_keywords_extracted: number;
+  keywords: Keyword[];
+}
+
+export interface QualityFlag {
+  flag: string;
+  count: number;
+}
+
+export interface QualityMetrics {
+  event_id: number;
+  total_feedback: number;
+  quality_decision_breakdown: QualityBreakdown;
+  common_flags: QualityFlag[];
+}
+
+// ============= Authentication Models =============
+export interface LoginRequest {
+  identifier: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  name: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface Speaker {
+  id: number;
+  username: string;
+  email: string;
+  name: string;
+  created_at: string;
+}
+
+// ============= Public Feedback Models =============
+export interface EventInfoResponse {
+  event_id: number;
+  title: string;
+  description: string | null;
+}
