@@ -45,12 +45,8 @@ def submit_text_feedback(
         payload.text
     )
 
-    return {
-        "id": feedback.id,
-        "sentiment": analysis.sentiment,
-        "confidence": analysis.confidence,
-        "decision": feedback.quality_decision
-    }
+    # Return the full feedback object as FeedbackResponse expects
+    return feedback
 
 
 @router.post("/{public_token}/audio", response_model=FeedbackResponse)
@@ -71,9 +67,5 @@ def submit_audio_feedback(
         str(file_path)
     )
 
-    return {
-        "id": feedback.id,
-        "sentiment": analysis.sentiment,
-        "confidence": analysis.confidence,
-        "decision": feedback.quality_decision
-    }
+    # Return the full feedback object as FeedbackResponse expects
+    return feedback

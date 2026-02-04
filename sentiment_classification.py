@@ -2,10 +2,17 @@ import time
 from transformers import pipeline
 import re
 
-sentiment_classifier = pipeline(
-    "sentiment-analysis",
-    model="cardiffnlp/twitter-roberta-base-sentiment"
-)
+# Lazy load sentiment classifier
+_sentiment_classifier = None
+
+def get_sentiment_classifier():
+    global _sentiment_classifier
+    if _sentiment_classifier is None:
+        _sentiment_classifier = pipeline(
+            "sentiment-analysis",
+            model="cardiffnlp/twitter-roberta-base-sentiment"
+        )
+    return _sentiment_classifier
 
 LABEL_MAP = {
     "LABEL_0": "Negative",
@@ -107,9 +114,10 @@ def classify_feedback(text, neutral_margin=0.22, min_neutral_confidence=0.55, ha
     
     try:
         chunk_results = []
+        classifier = get_sentiment_classifier()  # Lazy load
         
         for chunk in chunks:
-            results = sentiment_classifier(chunk, top_k=None)
+            results = classifier(chunk, top_k=None)
             results = sorted(results, key=lambda x: x["score"], reverse=True)
             top = results[0]
             second = results[1]
@@ -158,5 +166,5 @@ def classify_feedback(text, neutral_margin=0.22, min_neutral_confidence=0.55, ha
         }
 
 
-sentiment_classifier("Warm up run")
+# Removed warm-up run - lazy loading instead
 

@@ -41,7 +41,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   onSuccess 
 }) => {
   const router = useRouter();
-  const { register, isLoading, error, clearError } = useAuth();
+  const { register, login, isLoading, error, clearError } = useAuth();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -164,15 +164,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     }
 
     try {
-      const tokenResponse = await register({
+      await register({
         name: formData.name.trim(),
         email: formData.email,
         password: formData.password,
-        is_active: true,
       });
 
-      // Store token (auto-login)
-      localStorage.setItem('token', tokenResponse.access_token);
+      // Auto-login after registration
+      await login({
+        identifier: formData.email,
+        password: formData.password,
+      });
       
       // Call success callback or redirect
       if (onSuccess) {

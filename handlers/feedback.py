@@ -152,7 +152,7 @@ def list_event_feedback(session: Session, event_id: int):
             FeedbackAnalysis.sentiment,
             FeedbackAnalysis.confidence,
         )
-        .join(
+        .outerjoin(
             FeedbackAnalysis,
             FeedbackAnalysis.feedback_id == Feedback.id
         )
@@ -168,7 +168,7 @@ def list_event_feedback(session: Session, event_id: int):
             "event_id": row.event_id,
             "input_type": row.input_type,
             "text_feedback": row.normalized_text,
-            "audio_path": row.audio_path,
+            "audio_path": f"http://localhost:8000/{row.audio_path}" if row.audio_path else None,
             "sentiment": row.sentiment,
             "confidence": row.confidence,
             "quality_decision": row.quality_decision,
@@ -221,13 +221,19 @@ def get_feedback_detail(session: Session, feedback_id: int, event_id: int):
     if not result:
         return None
 
+    # Convert local file path to URL path
+    audio_url = None
+    if result.audio_path:
+        # Convert "uploads/audio/file.webm" to "http://localhost:8000/uploads/audio/file.webm"
+        audio_url = f"http://localhost:8000/{result.audio_path}"
+    
     return {
         "id": result.id,
         "event_id": result.event_id,
         "input_type": result.input_type,
         "raw_text": result.raw_text,
         "normalized_text": result.normalized_text,
-        "audio_path": result.audio_path,
+        "audio_path": audio_url,
         "sentiment": result.sentiment,
         "confidence": result.confidence,
         "margin": result.margin,

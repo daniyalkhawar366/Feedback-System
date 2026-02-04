@@ -6,19 +6,51 @@ from collections import Counter
 from faster_whisper import WhisperModel
 from wordfreq import zipf_frequency
 from typing import List, Dict
+import subprocess
+from pathlib import Path
 
-model_path="/home/umer/Desktop/Intelligent Feedback System/model/whisper-small-en/models--Systran--faster-whisper-small.en/snapshots/d1d751a5f8271d482d14ca55d9e2deeebbae577f"
-model = WhisperModel(
-    model_path,
-    device="cpu",
-    compute_type="int8"
-)
+# Lazy load model - only initialize when needed
+_model = None
+
+def get_model():
+    global _model
+    if _model is None:
+        _model = WhisperModel(
+            "small.en",  # This will auto-download the model
+            device="cpu",
+            compute_type="int8"
+        )
+    return _model
 
 def normalize_text(text: str) -> str:
     text = text.lower()
     text = re.sub(r"[^a-z0-9\s]", "", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
+
+
+def convert_webm_to_wav(webm_path: str) -> str:
+    """Convert WebM audio to WAV format using ffmpeg"""
+    wav_path = webm_path.rsplit('.', 1)[0] + '_converted.wav'
+    
+    try:
+        # Use ffmpeg to convert WebM to WAV
+        subprocess.run([
+            'ffmpeg',
+            '-i', webm_path,
+            '-ar', '16000',  # 16kHz sample rate (good for speech)
+            '-ac', '1',       # mono
+            '-y',             # overwrite output file
+            wav_path
+        ], check=True, capture_output=True, timeout=30)
+        
+        return wav_path
+    except subprocess.CalledProcessError as e:
+        raise Exception(f"Error converting audio: {e.stderr.decode() if e.stderr else str(e)}")
+    except FileNotFoundError:
+        raise Exception("ffmpeg not found. Please install ffmpeg to process audio files.")
+    except subprocess.TimeoutExpired:
+        raise Exception("Audio conversion timed out")
 
 
 def char_entropy(text: str) -> float:
@@ -91,6 +123,10 @@ def gibberish_score(text: str) -> float:
 
 
 def detect_audio_silence(audio_path: str, threshold: float = 0.01) -> bool:
+    # Convert WebM to WAV if needed
+    if audio_path.lower().endswith('.webm'):
+        audio_path = convert_webm_to_wav(audio_path)
+    
     data, samplerate = sf.read(audio_path)
     if data.ndim > 1:
         data = data.mean(axis=1)
@@ -100,6 +136,10 @@ def detect_audio_silence(audio_path: str, threshold: float = 0.01) -> bool:
 
 
 def get_audio_duration(audio_path: str) -> float:
+    # Convert WebM to WAV if needed
+    if audio_path.lower().endswith('.webm'):
+        audio_path = convert_webm_to_wav(audio_path)
+    
     data, samplerate = sf.read(audio_path)
     duration = len(data) / samplerate
     return duration
@@ -166,8 +206,16 @@ def quality_gate(
 
 
 def transcribe_and_validate(audio_path: str) -> Dict:
+    converted_path = None
     try:
-        duration = get_audio_duration(audio_path)
+        # Convert WebM to WAV if needed
+        if audio_path.lower().endswith('.webm'):
+            converted_path = convert_webm_to_wav(audio_path)
+            processing_path = converted_path
+        else:
+            processing_path = audio_path
+        
+        duration = get_audio_duration(processing_path)
         if duration > 300:  
             return {
                 "decision": "REJECT",
@@ -184,14 +232,15 @@ def transcribe_and_validate(audio_path: str) -> Dict:
             "reason": f"Invalid audio file: {str(e)}"
         }
 
-    if detect_audio_silence(audio_path):
+    if detect_audio_silence(processing_path):
         return {
             "decision": "REJECT",
             "reason": "Silent audio"
         }
 
+    model = get_model()  # Lazy load the model
     segments_gen, info = model.transcribe(
-        audio_path,
+        processing_path,
         beam_size=5
     )
 
@@ -205,6 +254,13 @@ def transcribe_and_validate(audio_path: str) -> Dict:
         segments,
         info
     )
+    
+    # Clean up converted file if it was created
+    if converted_path and Path(converted_path).exists():
+        try:
+            Path(converted_path).unlink()
+        except:
+            pass  # Ignore cleanup errors
 
     return {
         "language": info.language,

@@ -43,9 +43,11 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
     try {
       setLoading(true);
       const response = await api.get<EventFeedbackRead[]>(`/events/${eventId}/feedback`);
-      setFeedbacks(response.data);
+      console.log('Fetched feedbacks:', response.data);
+      setFeedbacks(response.data || []);
     } catch (error) {
       console.error('Failed to fetch feedbacks:', error);
+      setFeedbacks([]);
     } finally {
       setLoading(false);
     }
@@ -212,7 +214,13 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
         </div>
       ) : filteredFeedbacks.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-          <p className="text-gray-600">No feedbacks match your filters</p>
+          <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-lg font-semibold text-gray-900 mb-2">
+            {feedbacks.length === 0 ? 'No Feedback Yet' : 'No feedbacks match your filters'}
+          </p>
+          <p className="text-gray-600">
+            {feedbacks.length === 0 ? 'No feedback has been submitted for this event yet.' : 'Try adjusting your search or filter criteria.'}
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -228,17 +236,17 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-3">
                       {feedback.input_type === 'text' ? (
                         <MessageSquare className="w-5 h-5 text-blue-600 flex-shrink-0" />
                       ) : (
                         <Mic className="w-5 h-5 text-pink-600 flex-shrink-0" />
                       )}
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {(feedback.text_feedback || '').substring(0, 100)}
-                        {(feedback.text_feedback || '').length > 100 && '...'}
-                      </p>
                     </div>
+                    <p className="text-base text-gray-900 leading-relaxed mb-3">
+                      {(feedback.text_feedback || '').substring(0, 200)}
+                      {(feedback.text_feedback || '').length > 200 && '...'}
+                    </p>
                     <div className="flex flex-wrap items-center gap-3">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium border ${getSentimentColor(

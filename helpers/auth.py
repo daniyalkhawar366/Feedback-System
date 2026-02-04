@@ -12,8 +12,8 @@ from db.db import SessionDep
 
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production-min-32-chars")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
 
 security = HTTPBearer()
 

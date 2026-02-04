@@ -156,9 +156,8 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
-  username: string;
-  email: string;
   name: string;
+  email: string;
   password: string;
 }
 
@@ -180,4 +179,36 @@ export interface EventInfoResponse {
   event_id: number;
   title: string;
   description: string | null;
+}
+
+// ============= Consensus Report Models =============
+export interface ConsensusReportSummary {
+  main_summary: string;
+  conflicting_statement: string | null;
+  top_weighted_points: string[];
+}
+
+export interface ConsensusReport {
+  report_id: number;
+  event_id: number;
+  event_title: string;
+  category: string;
+  feedback_count: number;
+  generation_time: number;
+  generated_at: string;
+  summary: ConsensusReportSummary;
+  highlights: string[];
+  concerns: string[];
+  next_steps: string[];
+}
+
+export interface ConsensusReportHistory {
+  event_id: number;
+  total_reports: number;
+  reports: {
+    report_id: number;
+    generated_at: string;
+    feedback_count: number;
+    generation_time: number | null;
+  }[];
 }

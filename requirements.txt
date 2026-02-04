@@ -34,6 +34,13 @@ idna==3.11
 Jinja2==3.1.6
 jose==1.0.0
 jwt==1.4.0
+
+# Consensus reporting dependencies
+langchain-core>=0.3.0
+langchain-groq>=0.2.0
+langgraph>=0.2.0
+pandas>=2.0.0
+
 langcodes==3.5.1
 locate==1.1.1
 markdown-it-py==4.0.0

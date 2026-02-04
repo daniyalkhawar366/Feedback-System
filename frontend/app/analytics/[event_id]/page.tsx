@@ -2,19 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Download, Loader2, BarChart3, TrendingUp, Hash, Shield, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Loader2, MessageSquare, Sparkles } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import OverviewTab from '@/components/analytics/OverviewTab';
-import TrendsTab from '@/components/analytics/TrendsTab';
-import KeywordsTab from '@/components/analytics/KeywordsTab';
-import QualityTab from '@/components/analytics/QualityTab';
 import FeedbacksTab from '@/components/analytics/FeedbacksTab';
+import ConsensusTab from '@/components/analytics/ConsensusTab';
 import { useAuth } from '@/hooks/useAuth';
-import { generatePDF } from '@/utils/report';
 import api from '@/utils/api';
-import type { EventStats, TopKeywords, EventRead } from '@/types/api';
+import type { EventRead } from '@/types/api';
 
-type TabType = 'overview' | 'trends' | 'keywords' | 'quality' | 'feedbacks';
+type TabType = 'consensus' | 'feedbacks';
 
 export default function AnalyticsPage() {
   const params = useParams();
@@ -22,11 +18,9 @@ export default function AnalyticsPage() {
   const { speaker } = useAuth();
   const eventId = Number(params.event_id);
 
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>('consensus');
   const [event, setEvent] = useState<EventRead | null>(null);
-  const [stats, setStats] = useState<EventStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -35,12 +29,8 @@ export default function AnalyticsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [eventRes, statsRes] = await Promise.all([
-        api.get<EventRead>(`/events/${eventId}`),
-        api.get<EventStats>(`/analytics/events/${eventId}/stats`),
-      ]);
+      const eventRes = await api.get<EventRead>(`/events/${eventId}`);
       setEvent(eventRes.data);
-      setStats(statsRes.data);
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
     } finally {
@@ -48,25 +38,8 @@ export default function AnalyticsPage() {
     }
   };
 
-  const handleExportPDF = async () => {
-    if (!stats || !speaker) return;
-
-    try {
-      setExporting(true);
-      const keywordsRes = await api.get<TopKeywords>(`/analytics/events/${eventId}/keywords`);
-      await generatePDF(stats, keywordsRes.data, speaker.name);
-    } catch (error) {
-      console.error('Failed to export PDF:', error);
-    } finally {
-      setExporting(false);
-    }
-  };
-
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: BarChart3 },
-    { id: 'trends', label: 'Trends', icon: TrendingUp },
-    { id: 'keywords', label: 'Keywords', icon: Hash },
-    { id: 'quality', label: 'Quality', icon: Shield },
+    { id: 'consensus', label: 'Overview', icon: Sparkles },
     { id: 'feedbacks', label: 'Feedbacks', icon: MessageSquare },
   ] as const;
 
@@ -108,24 +81,6 @@ export default function AnalyticsPage() {
                   </p>
                 </div>
               </div>
-
-              <button
-                onClick={handleExportPDF}
-                disabled={exporting || !stats}
-                className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-              >
-                {exporting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span className="hidden sm:inline">Exporting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-5 h-5" />
-                    <span className="hidden sm:inline">Download Report</span>
-                  </>
-                )}
-              </button>
             </div>
           </div>
         </header>
@@ -157,10 +112,7 @@ export default function AnalyticsPage() {
 
         {/* Tab Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {activeTab === 'overview' && stats && <OverviewTab eventId={eventId} stats={stats} />}
-          {activeTab === 'trends' && <TrendsTab eventId={eventId} />}
-          {activeTab === 'keywords' && <KeywordsTab eventId={eventId} />}
-          {activeTab === 'quality' && <QualityTab eventId={eventId} />}
+          {activeTab === 'consensus' && <ConsensusTab eventId={eventId} />}
           {activeTab === 'feedbacks' && <FeedbacksTab eventId={eventId} />}
         </main>
       </div>
