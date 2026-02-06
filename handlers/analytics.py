@@ -27,10 +27,10 @@ def get_event_stats(session: Session, event_id: int, speaker_id: int) -> Dict:
             detail="Event not found"
         )
     
-    # Get all feedback for this event with analysis
+    # Get all feedback for this event with optional analysis
     feedback_query = session.exec(
         select(Feedback, FeedbackAnalysis)
-        .join(FeedbackAnalysis, FeedbackAnalysis.feedback_id == Feedback.id)
+        .outerjoin(FeedbackAnalysis, FeedbackAnalysis.feedback_id == Feedback.id)
         .where(Feedback.event_id == event_id)
     ).all()
     
@@ -42,7 +42,8 @@ def get_event_stats(session: Session, event_id: int, speaker_id: int) -> Dict:
             "sentiment_distribution": {
                 "positive": {"count": 0, "percentage": 0.0},
                 "negative": {"count": 0, "percentage": 0.0},
-                "neutral": {"count": 0, "percentage": 0.0}
+                "neutral": {"count": 0, "percentage": 0.0},
+                "pending": {"count": 0, "percentage": 0.0}
             },
             "quality_breakdown": {
                 "accepted": 0,
@@ -62,17 +63,23 @@ def get_event_stats(session: Session, event_id: int, speaker_id: int) -> Dict:
     
     # Process feedback data
     total_feedback = len(feedback_query)
-    sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0}
+    sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0, "pending": 0}
     quality_counts = {"ACCEPT": 0, "FLAG": 0, "REJECT": 0}
     input_counts = {"text": 0, "audio": 0}
     confidence_scores = []
     latest_feedback_date = event.created_at
     
     for feedback, analysis in feedback_query:
-        # Count sentiments
-        sentiment = analysis.sentiment.lower()
-        if sentiment in sentiment_counts:
-            sentiment_counts[sentiment] += 1
+        # Count sentiments (handle pending analysis)
+        if analysis and analysis.sentiment:
+            sentiment = analysis.sentiment.lower()
+            if sentiment in sentiment_counts:
+                sentiment_counts[sentiment] += 1
+            # Collect confidence scores only if analyzed
+            if analysis.confidence:
+                confidence_scores.append(analysis.confidence)
+        else:
+            sentiment_counts["pending"] += 1
         
         # Count quality decisions
         if feedback.quality_decision in quality_counts:
@@ -81,9 +88,6 @@ def get_event_stats(session: Session, event_id: int, speaker_id: int) -> Dict:
         # Count input types
         if feedback.input_type in input_counts:
             input_counts[feedback.input_type] += 1
-        
-        # Collect confidence scores
-        confidence_scores.append(analysis.confidence)
         
         # Track latest feedback date
         if feedback.created_at > latest_feedback_date:

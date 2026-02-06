@@ -1,8 +1,48 @@
 import math
 import re
 from collections import Counter
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import string
+
+# Profanity and abusive words list
+PROFANITY_WORDS = {
+    # Common profanity
+    "fuck", "fucking", "fucker", "fucked", "fck", "fuk", "f***",
+    "shit", "shit", "sht", "s***",
+    "bitch", "btch", "b****",
+    "ass", "asshole", "a**", "a******",
+    "damn", "damned", "dammit",
+    "crap", "crappy",
+    "piss", "pissed",
+    "bastard", "bstrd",
+    "dick", "dck",
+    "cock", "cck",
+    "pussy", "pssy",
+    "whore", "wh***",
+    "slut", "sl**",
+    # Hate speech and slurs
+    "nigger", "nigga", "n****",
+    "fag", "faggot", "f**",
+    "retard", "retarded", "rtrd",
+    "cunt", "c***",
+    # Abusive terms
+    "idiot", "stupid", "moron", "dumb", "dumbass",
+    "loser", "pathetic", "worthless",
+    "trash", "garbage",
+    # Sexual harassment
+    "rape", "rapist",
+    "molest", "molester",
+    # Variations and leetspeak
+    "fvck", "phuck", "fack",
+    "shyt", "shiit",
+    "azz", "@ss",
+}
+
+# Leet speak and symbol substitutions
+LEETSPEAK_MAP = {
+    '4': 'a', '@': 'a', '8': 'b', '3': 'e', '1': 'i', '!': 'i',
+    '0': 'o', '5': 's', '$': 's', '7': 't', '+': 't'
+}
 
 COMMON_ENGLISH_WORDS = {
     "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "from",
@@ -33,6 +73,78 @@ def normalize_text(text: str) -> str:
     text = re.sub(r"[^a-z0-9\s]", "", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
+
+
+def normalize_for_profanity_check(text: str) -> str:
+    """Normalize text to catch leetspeak and symbol substitutions"""
+    text = text.lower()
+    # Replace leetspeak characters
+    for symbol, letter in LEETSPEAK_MAP.items():
+        text = text.replace(symbol, letter)
+    # Remove non-alphanumeric except spaces
+    text = re.sub(r"[^a-z0-9\s]", "", text)
+    # Remove excessive spacing
+    text = re.sub(r"\s+", " ", text)
+    return text
+
+
+def detect_profanity(text: str) -> Tuple[bool, List[str]]:
+    """
+    Detect profanity in text, including variations and leetspeak.
+    
+    Returns:
+        (has_profanity, list_of_bad_words_found)
+    """
+    normalized = normalize_for_profanity_check(text)
+    words = normalized.split()
+    found_profanity = []
+    
+    # Check whole words
+    for word in words:
+        if word in PROFANITY_WORDS:
+            found_profanity.append(word)
+    
+    # Check for profanity as substrings (e.g., "unfuckingbelievable")
+    for profanity in PROFANITY_WORDS:
+        if len(profanity) > 3:  # Only check longer words to avoid false positives
+            if profanity in normalized:
+                if profanity not in found_profanity:
+                    found_profanity.append(profanity)
+    
+    return len(found_profanity) > 0, found_profanity
+
+
+def censor_profanity(text: str) -> Tuple[str, bool]:
+    """
+    Replace profanity with [CENSORED] while preserving text structure.
+    
+    Returns:
+        (censored_text, was_censored)
+    """
+    has_profanity, bad_words = detect_profanity(text)
+    
+    if not has_profanity:
+        return text, False
+    
+    censored = text
+    
+    # Sort by length (longest first) to handle substrings properly
+    bad_words_sorted = sorted(set(bad_words), key=len, reverse=True)
+    
+    for bad_word in bad_words_sorted:
+        # Create case-insensitive pattern with word boundaries
+        pattern = re.compile(r'\b' + re.escape(bad_word) + r'\b', re.IGNORECASE)
+        censored = pattern.sub('[CENSORED]', censored)
+        
+        # Also check for the word without word boundaries (for compound words)
+        pattern_no_boundary = re.compile(re.escape(bad_word), re.IGNORECASE)
+        censored = pattern_no_boundary.sub('[CENSORED]', censored)
+    
+    # Clean up multiple consecutive [CENSORED]
+    censored = re.sub(r'(\[CENSORED\]\s*){2,}', '[CENSORED] ', censored)
+    censored = censored.strip()
+    
+    return censored, True
 
 
 def char_entropy(text: str) -> float:
@@ -160,6 +272,12 @@ def validate_text_feedback(text: str) -> Dict:
             "flags": []
         }
     
+    # Check and censor profanity
+    censored_text, was_censored = censor_profanity(text)
+    if was_censored:
+        flags.append("profanity_censored")
+        text = censored_text  # Use censored version for further processing
+    
     normalized = normalize_text(text)
     words = text.split()
     word_count = len(words)
@@ -229,7 +347,8 @@ def get_validation_issues(validation_result: Dict) -> List[str]:
         "excessive_filler_words": "Contains more than 40% filler words (um, uh, like, etc.)",
         "gibberish_detected": "Nonsense words or patterns detected",
         "spam_detected": "Potential spam content (URLs, excessive symbols, etc.)",
-        "excessive_capitalization": "Contains excessive capital letters"
+        "excessive_capitalization": "Contains excessive capital letters",
+        "profanity_censored": "Inappropriate language was detected and censored"
     }
     
     return [

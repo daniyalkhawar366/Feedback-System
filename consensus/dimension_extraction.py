@@ -37,10 +37,10 @@ DIMENSIONS TO EXTRACT (COMMON)
 - Primary topic cluster related to events, 1-4 word noun phrase (e.g., "Speaker Delivery", "Audio Quality", "Content Clarity"). Exactly one.
 
 2) sentiment
-- One of {{"POSITIVE", "NEUTRAL", "NEGATIVE"}} based on stance toward the subject (not writing style). If mixed, weigh the main claim.
+- One of {{"Positive", "Neutral", "Negative"}} based on stance toward the subject (not writing style). If mixed, weigh the main claim.
 
 3) emotion
-- One of {{"ANTICIPATION", "JOY", "TRUST", "SURPRISE", "ANGER", "FEAR", "SADNESS", "DISGUST"}}; pick the dominant emotion or null.
+- One of {{"ANTICIPATION", "JOY", "TRUST", "SURPRISE", "ANGER", "FEAR", "SADNESS", "DISGUST"}}; pick the dominant emotion. If no clear emotion, omit this field entirely (do not set to null).
 
 4) is_critical_opinion
 - boolean. True if the text contains a substantive claim that could influence future events (claim + rationale, or a specific issue/praise).
@@ -89,8 +89,8 @@ OUTPUT FORMAT - STRICT JSON ONLY
 Return exactly one JSON object with:
 {{
     "theme": "<string>",
-    "sentiment": "POSITIVE|NEUTRAL|NEGATIVE",
-    "emotion": "ANTICIPATION|JOY|TRUST|SURPRISE|ANGER|FEAR|SADNESS|DISGUST|null",
+    "sentiment": "Positive|Neutral|Negative",
+    "emotion": "ANTICIPATION|JOY|TRUST|SURPRISE|ANGER|FEAR|SADNESS|DISGUST",  // omit this field if no clear emotion
     "is_critical_opinion": true|false,
     "risk_flag": true|false,
     "confidence": <float>,

@@ -3,6 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+import os
 from routes.health import router as health_router
 from routes.speaker import router as speaker_router
 from routes.event import router as event_router
@@ -10,6 +11,15 @@ from routes.feedback import router as feedback_router
 from routes.login import router as login_router
 from routes.analytics import router as analytics_router
 from routes.reports import router as reports_router
+
+# Validate required environment variables
+required_env_vars = ["DATABASE_URL", "SECRET_KEY"]
+missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+if missing_vars:
+    raise RuntimeError(
+        f"Missing required environment variables: {', '.join(missing_vars)}\n"
+        f"Please check your .env file."
+    )
 
 app = FastAPI(title="Intelligent Feedback System")
 

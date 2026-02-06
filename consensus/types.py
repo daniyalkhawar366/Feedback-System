@@ -27,9 +27,9 @@ class Category(str, Enum):
 
 class Sentiment(str, Enum):
     """Sentiment classification."""
-    POSITIVE = "POSITIVE"
-    NEUTRAL = "NEUTRAL"
-    NEGATIVE = "NEGATIVE"
+    POSITIVE = "Positive"
+    NEUTRAL = "Neutral"
+    NEGATIVE = "Negative"
 
 
 class Emotion(str, Enum):

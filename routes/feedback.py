@@ -39,33 +39,69 @@ def submit_text_feedback(
     payload: FeedbackTextCreate,
     session: SessionDep
 ):
-    feedback, analysis = handle_text_feedback(
+    feedback = handle_text_feedback(
         session,
         public_token,
         payload.text
     )
 
-    # Return the full feedback object as FeedbackResponse expects
-    return feedback
+    # Return feedback confirmation (sentiment will be analyzed by LLM later)
+    return {
+        "id": feedback.id,
+        "sentiment": None,  # Will be filled by LLM during analysis pipeline
+        "confidence": None,
+        "decision": feedback.quality_decision
+    }
 
 
 @router.post("/{public_token}/audio", response_model=FeedbackResponse)
 def submit_audio_feedback(
-    session:SessionDep,
+    session: SessionDep,
     public_token: str,
     file: UploadFile = File(...)
 ):
+    from fastapi import HTTPException
+    
+    # Validate file type
+    if not file.filename or not file.filename.endswith(('.webm', '.wav', '.mp3', '.m4a')):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid audio format. Supported: .webm, .wav, .mp3, .m4a"
+        )
+    
+    # Validate file size (max 10MB)
+    file.file.seek(0, 2)  # Seek to end
+    file_size = file.file.tell()
+    file.file.seek(0)  # Reset to start
+    
+    if file_size > 10 * 1024 * 1024:  # 10MB
+        raise HTTPException(
+            status_code=400,
+            detail="File too large. Maximum size: 10MB"
+        )
+    
     filename = f"{uuid.uuid4()}_{file.filename}"
     file_path = UPLOAD_DIR / filename
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save audio file: {str(e)}"
+        )
 
-    feedback, analysis = handle_audio_feedback(
+    feedback = handle_audio_feedback(
         session,
         public_token,
         str(file_path)
     )
 
-    # Return the full feedback object as FeedbackResponse expects
-    return feedback
+    # Return feedback confirmation (sentiment will be analyzed by LLM later)
+    return {
+        "id": feedback.id,
+        "sentiment": None,  # Will be filled by LLM during analysis pipeline
+        "confidence": None,
+        "decision": feedback.quality_decision
+    }

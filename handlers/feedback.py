@@ -1,12 +1,41 @@
 import json
+from datetime import datetime
 from sqlmodel import Session, select
 from fastapi import HTTPException, status
 
-from db.model import Feedback, FeedbackAnalysis
+from db.model import Feedback, FeedbackAnalysis, Event
 from handlers.event import get_event_by_token
-from speech_to_text import transcribe_and_validate
+from speech_to_text import transcribe_audio
 from text_validation import validate_text_feedback, is_valid_feedback
-from sentiment_classification import classify_feedback
+
+
+def check_feedback_window(event: Event):
+    """
+    Validate that feedback can be accepted for this event.
+    
+    Args:
+        event: Event object
+        
+    Raises:
+        HTTPException if feedback window is not open
+    """
+    now = datetime.utcnow()
+    
+    # If no feedback window is set, allow feedback (backward compatibility)
+    if not event.feedback_open_at or not event.feedback_close_at:
+        return
+    
+    if now < event.feedback_open_at:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Feedback window has not opened yet. Opens at {event.feedback_open_at.isoformat()}"
+        )
+    
+    if now > event.feedback_close_at:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Feedback window has closed. No new submissions are accepted."
+        )
 
 
 def handle_text_feedback(
@@ -26,6 +55,9 @@ def handle_text_feedback(
         (feedback, analysis) tuple or raises HTTPException if invalid
     """
     event = get_event_by_token(session, public_token)
+    
+    # Check if feedback window is open
+    check_feedback_window(event)
 
     # --- Validate text input ---
     validation_result = validate_text_feedback(text)
@@ -36,9 +68,6 @@ def handle_text_feedback(
             detail=validation_result.get("reason", "Text validation failed")
         )
 
-    # --- Classify sentiment ---
-    sentiment_result = classify_feedback(text)
-
     # --- Store feedback ---
     feedback = Feedback(
         event_id=event.id,
@@ -46,26 +75,17 @@ def handle_text_feedback(
         raw_text=text,
         normalized_text=validation_result["clean_text"],
         quality_decision=validation_result["decision"],
-        quality_flags=json.dumps(validation_result.get("flags", []))
+        quality_flags=json.dumps(validation_result.get("flags", [])),
+        validated_at=datetime.utcnow()
     )
 
     session.add(feedback)
     session.commit()
     session.refresh(feedback)
 
-    # --- Store analysis ---
-    analysis = FeedbackAnalysis(
-        feedback_id=feedback.id,
-        sentiment=sentiment_result["sentiment"],
-        confidence=sentiment_result["confidence"],
-        margin=sentiment_result.get("margin"),
-        model_name="cardiffnlp/twitter-roberta-base-sentiment"
-    )
-
-    session.add(analysis)
-    session.commit()
-
-    return feedback, analysis
+    # Note: Dimension extraction happens during report generation (batch processing)
+    # to avoid making 100 LLM calls for 100 individual feedbacks
+    return feedback
 
 
 def handle_audio_feedback(
@@ -82,50 +102,54 @@ def handle_audio_feedback(
         audio_path: Path to audio file
         
     Returns:
-        (feedback, analysis) tuple or raises HTTPException if invalid
+        feedback object or raises HTTPException if invalid
     """
     event = get_event_by_token(session, public_token)
+    
+    # Check if feedback window is open
+    check_feedback_window(event)
 
-    # --- Transcribe audio ---
-    result = transcribe_and_validate(audio_path)
+    # Step 1: Transcribe audio (audio-specific validation)
+    transcription_result = transcribe_audio(audio_path)
 
-    if result["decision"] == "REJECT":
+    if not transcription_result["success"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid audio feedback: {result.get('reason', 'Unknown error')}"
+            detail=f"Invalid audio: {transcription_result.get('reason', 'Unknown error')}"
         )
 
-    # --- Classify sentiment on transcribed text ---
-    sentiment_result = classify_feedback(result["normalized_text"])
+    raw_text = transcription_result["raw_text"]
+    
+    # Step 2: Validate transcribed text (same as text feedback)
+    validation_result = validate_text_feedback(raw_text)
+    
+    if validation_result["decision"] == "REJECT":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=validation_result.get("reason", "Text validation failed")
+        )
 
-    # --- Store feedback ---
+    # Step 3: Store feedback
     feedback = Feedback(
         event_id=event.id,
         input_type="audio",
-        raw_text=result["raw_text"],
-        normalized_text=result["normalized_text"],
+        raw_text=raw_text,
+        normalized_text=validation_result["clean_text"],
         audio_path=audio_path,
-        quality_decision=result["decision"],
-        quality_flags=json.dumps(result.get("flags", []))
+        audio_duration_sec=transcription_result.get("audio_duration"),
+        language=transcription_result.get("language"),
+        quality_decision=validation_result["decision"],
+        quality_flags=json.dumps(validation_result.get("flags", [])),
+        validated_at=datetime.utcnow()
     )
 
     session.add(feedback)
     session.commit()
     session.refresh(feedback)
 
-    # --- Store analysis ---
-    analysis = FeedbackAnalysis(
-        feedback_id=feedback.id,
-        sentiment=sentiment_result["sentiment"],
-        confidence=sentiment_result["confidence"],
-        margin=sentiment_result.get("margin"),
-        model_name="cardiffnlp/twitter-roberta-base-sentiment"
-    )
-
-    session.add(analysis)
-    session.commit()
-
-    return feedback, analysis
+    # Note: Dimension extraction happens during report generation (batch processing)
+    # to avoid making 100 LLM calls for 100 individual feedbacks
+    return feedback
 
 
 def list_event_feedback(session: Session, event_id: int):

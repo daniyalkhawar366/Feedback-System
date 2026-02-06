@@ -20,7 +20,7 @@ env/
 
 # Models (already present)
 /model
-models/
+model/
 *.pth
 *.pkl
 *.h5
@@ -84,6 +84,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+*.md
 
 # vercel
 .vercel

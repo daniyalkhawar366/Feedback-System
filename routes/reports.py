@@ -2,10 +2,11 @@
 API routes for consensus report generation
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from db.db import SessionDep
-from db.model import Event, Feedback, EventReport, FeedbackAnalysis
+from db.model import Event, Feedback, EventReport, FeedbackAnalysis, Speaker
+from helpers.auth import get_current_speaker
 from consensus.report_generator import generate_report_for_event
 from consensus.simple_feedback_report import generate_simple_report
 import time
@@ -51,7 +52,8 @@ def clean_technical_language(text: str) -> str:
 async def generate_event_report(
     event_id: int,
     session: SessionDep,
-    min_feedback: int = 5
+    min_feedback: int = 5,
+    current_speaker: Speaker = Depends(get_current_speaker)
 ):
     """
     Generate comprehensive consensus report for an event.
@@ -63,10 +65,13 @@ async def generate_event_report(
     Processing time: ~30-90 seconds depending on feedback count.
     """
     
-    # Check if event exists
+    # Check if event exists and belongs to speaker
     event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
+    
+    if event.speaker_id != current_speaker.id:
+        raise HTTPException(status_code=403, detail="You don't have access to this event")
     
     try:
         start_time = time.time()
@@ -101,10 +106,76 @@ async def generate_event_report(
         
         print(f"📝 Generating report for {len(feedbacks)} feedback responses...")
         
-        # Generate simple, actionable report
+        # Generate simple, actionable report with dimension extraction
         try:
-            report_result = generate_simple_report(feedbacks)
+            report_result = generate_simple_report(feedbacks, event.title)
             print(f"✅ Report generated successfully: {len(report_result.get('positive_themes', []))} themes, {len(report_result.get('improvement_areas', []))} improvements")
+            print(f"🔍 DEBUG: report_result keys: {report_result.keys()}")
+            
+            # Save extracted dimensions to database
+            dimensions = report_result.get('dimensions', [])
+            print(f"🔍 DEBUG: Got {len(dimensions)} dimensions from report")
+            
+            if dimensions:
+                print(f"💾 Saving {len(dimensions)} dimension analyses to database...")
+                saved_count = 0
+                
+                for i, (fb_dict, dimension) in enumerate(zip(feedbacks, dimensions)):
+                    print(f"🔍 DEBUG [{i}]: Processing feedback text: {fb_dict['text'][:50]}...")
+                    print(f"🔍 DEBUG [{i}]: Dimension - theme: {dimension.theme}, sentiment: {dimension.sentiment}")
+                    
+                    # Find the feedback record by matching text
+                    fb_record = session.exec(
+                        select(Feedback)
+                        .where(Feedback.event_id == event_id)
+                        .where(Feedback.normalized_text == fb_dict['text'])
+                    ).first()
+                    
+                    if fb_record:
+                        print(f"🔍 DEBUG [{i}]: Found feedback record id={fb_record.id}")
+                        # Check if analysis already exists
+                        existing = session.exec(
+                            select(FeedbackAnalysis)
+                            .where(FeedbackAnalysis.feedback_id == fb_record.id)
+                        ).first()
+                        
+                        if existing:
+                            # Update existing record with full dimensions
+                            existing.theme = dimension.theme
+                            existing.sentiment = dimension.sentiment.value if hasattr(dimension.sentiment, 'value') else str(dimension.sentiment)
+                            existing.emotion = dimension.emotion.value if dimension.emotion and hasattr(dimension.emotion, 'value') else (str(dimension.emotion) if dimension.emotion else None)
+                            existing.impact_direction = dimension.impact_direction.value if hasattr(dimension.impact_direction, 'value') else str(dimension.impact_direction)
+                            existing.is_against = dimension.is_against.value if hasattr(dimension.is_against, 'value') else str(dimension.is_against)
+                            existing.confidence = dimension.confidence
+                            existing.relevancy = dimension.relevancy
+                            existing.evidence_type = dimension.evidence_type.value if hasattr(dimension.evidence_type, 'value') else str(dimension.evidence_type)
+                            existing.is_critical_opinion = dimension.is_critical_opinion
+                            existing.risk_flag = dimension.risk_flag
+                        else:
+                            # Create new analysis record
+                            analysis = FeedbackAnalysis(
+                                feedback_id=fb_record.id,
+                                theme=dimension.theme,
+                                sentiment=dimension.sentiment.value if hasattr(dimension.sentiment, 'value') else str(dimension.sentiment),
+                                emotion=dimension.emotion.value if dimension.emotion and hasattr(dimension.emotion, 'value') else (str(dimension.emotion) if dimension.emotion else None),
+                                impact_direction=dimension.impact_direction.value if hasattr(dimension.impact_direction, 'value') else str(dimension.impact_direction),
+                                is_against=dimension.is_against.value if hasattr(dimension.is_against, 'value') else str(dimension.is_against),
+                                confidence=dimension.confidence,
+                                relevancy=dimension.relevancy,
+                                evidence_type=dimension.evidence_type.value if hasattr(dimension.evidence_type, 'value') else str(dimension.evidence_type),
+                                is_critical_opinion=dimension.is_critical_opinion,
+                                risk_flag=dimension.risk_flag
+                            )
+                            session.add(analysis)
+                            saved_count += 1
+                            print(f"✅ DEBUG [{i}]: Created new FeedbackAnalysis record")
+                    else:
+                        print(f"⚠️ DEBUG [{i}]: Could not find feedback record for text: {fb_dict['text'][:50]}")
+                
+                session.commit()
+                print(f"✅ Saved {saved_count} dimension analyses to database")
+            else:
+                print(f"⚠️ WARNING: No dimensions returned from report generation!")
         except Exception as e:
             print(f"❌ Error in generate_simple_report: {e}")
             import traceback
@@ -174,12 +245,24 @@ async def generate_event_report(
 
 
 @router.get("/events/{event_id}/latest")
-async def get_latest_report(event_id: int, session: SessionDep):
+async def get_latest_report(
+    event_id: int, 
+    session: SessionDep,
+    current_speaker: Speaker = Depends(get_current_speaker)
+):
     """
     Get the most recent consensus report for an event.
     
     Returns 404 if no report has been generated yet.
     """
+    
+    # Verify ownership
+    event = session.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
+    
+    if event.speaker_id != current_speaker.id:
+        raise HTTPException(status_code=403, detail="You don't have access to this event")
     
     statement = (
         select(EventReport)
@@ -224,12 +307,25 @@ async def get_latest_report(event_id: int, session: SessionDep):
 
 
 @router.get("/events/{event_id}/history")
-async def get_report_history(event_id: int, session: SessionDep, limit: int = 10):
+async def get_report_history(
+    event_id: int, 
+    session: SessionDep, 
+    limit: int = 10,
+    current_speaker: Speaker = Depends(get_current_speaker)
+):
     """
     Get report generation history for an event.
     
     - **limit**: Maximum number of reports to return (default: 10)
     """
+    
+    # Verify ownership
+    event = session.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
+    
+    if event.speaker_id != current_speaker.id:
+        raise HTTPException(status_code=403, detail="You don't have access to this event")
     
     statement = (
         select(EventReport)

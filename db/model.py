@@ -4,13 +4,15 @@ from typing import Optional
 
 class Speaker(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str=Field(index=True, unique=True)
+    name: str = Field(index=True, unique=True)
     email: str = Field(index=True, unique=True)
 
     password_hash: str
     is_active: bool = Field(default=True)
+    role: str = Field(default="speaker")
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_login_at: Optional[datetime] = None
 
 
 class Event(SQLModel, table=True):
@@ -24,6 +26,10 @@ class Event(SQLModel, table=True):
     public_token: str = Field(index=True, unique=True)
     is_active: bool = Field(default=True)
 
+    # Feedback window
+    feedback_open_at: Optional[datetime] = None
+    feedback_close_at: Optional[datetime] = None
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -31,42 +37,41 @@ class Feedback(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     event_id: int = Field(foreign_key="event.id", index=True)
 
-    input_type: str 
+    input_type: str  # "text" | "voice"
     raw_text: str = Field(sa_column=Column(Text))
     normalized_text: Optional[str] = Field(default=None, sa_column=Column(Text))
+    
     audio_path: Optional[str] = None
+    audio_duration_sec: Optional[float] = None
+    language: Optional[str] = None
 
-    quality_decision: str  
-    quality_flags: Optional[str] = None  
-
+    quality_decision: str  # "ACCEPT" | "REJECT" | "FLAG"
+    quality_flags: Optional[str] = Field(default=None, sa_column=Column(JSON))
+    
+    validated_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class FeedbackAnalysis(SQLModel, table=True):
+    """Stores LLM-extracted dimensions for each feedback"""
     id: Optional[int] = Field(default=None, primary_key=True)
-    feedback_id: int = Field(foreign_key="feedback.id", index=True)
-
-    sentiment: str  
-    confidence: float
-    margin: Optional[float] = None
-
-    model_name: str
+    feedback_id: int = Field(foreign_key="feedback.id", index=True, unique=True)
+    
+    # LLM-extracted dimensions
+    theme: Optional[str] = Field(default=None, index=True)  # Primary topic cluster
+    sentiment: Optional[str] = None  # "Positive" | "Negative" | "Neutral"
+    emotion: Optional[str] = None  # JOY, ANGER, SADNESS, etc.
+    impact_direction: Optional[str] = None  # "HELPED" | "NEUTRAL" | "HURT"
+    is_against: Optional[str] = None  # "YES" | "NO" | "MIXED"
+    
+    # Signal quality
+    confidence: Optional[float] = None  # 0.0 to 1.0
+    relevancy: Optional[int] = None  # 0 to 100
+    evidence_type: Optional[str] = None  # DATA, ANECDOTE, EXPERT_OPINION, etc.
+    is_critical_opinion: Optional[bool] = None
+    risk_flag: Optional[bool] = None
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class EventSummary(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    event_id: int = Field(foreign_key="event.id", unique=True)
-
-    positive_percent: float
-    neutral_percent: float
-    negative_percent: float
-
-    overall_summary: Optional[str] = None
-    improvement_suggestions: Optional[str] = None
-
-    generated_by_model: str
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class EventReport(SQLModel, table=True):
@@ -93,27 +98,4 @@ class EventReport(SQLModel, table=True):
     feedback_count: int
     generation_time_seconds: Optional[float] = None
     generated_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class FeedbackDimension(SQLModel, table=True):
-    """Stores extracted dimensions for each feedback message"""
-    id: Optional[int] = Field(default=None, primary_key=True)
-    feedback_id: int = Field(foreign_key="feedback.id", index=True)
-    report_id: int = Field(foreign_key="eventreport.id", index=True)
-    
-    # Extracted dimensions
-    theme: Optional[str] = None
-    sentiment: Optional[str] = None
-    emotion: Optional[str] = None
-    impact_direction: Optional[str] = None
-    
-    confidence: Optional[float] = None
-    relevancy: Optional[int] = None
-    evidence_type: Optional[str] = None
-    is_critical_opinion: Optional[bool] = None
-    is_against: Optional[str] = None
-    risk_flag: Optional[bool] = None
-    
-    weight_score: Optional[float] = None
-    extracted_at: datetime = Field(default_factory=datetime.utcnow)
 
