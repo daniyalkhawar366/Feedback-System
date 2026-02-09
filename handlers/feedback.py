@@ -26,15 +26,19 @@ def check_feedback_window(event: Event):
         return
     
     if now < event.feedback_open_at:
+        # Format datetime in a readable way
+        open_time = event.feedback_open_at.strftime("%B %d, %Y at %I:%M %p UTC")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Feedback window has not opened yet. Opens at {event.feedback_open_at.isoformat()}"
+            detail=f"Feedback window has not opened yet. Opens at {open_time}"
         )
     
     if now > event.feedback_close_at:
+        # Format datetime in a readable way
+        close_time = event.feedback_close_at.strftime("%B %d, %Y at %I:%M %p UTC")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Feedback window has closed. No new submissions are accepted."
+            detail=f"Feedback window has closed. It closed on {close_time}"
         )
 
 

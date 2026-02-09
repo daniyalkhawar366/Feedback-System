@@ -8,6 +8,8 @@ export interface EventCreate {
   title: string;
   description?: string;
   event_date?: string; // ISO date string
+  feedback_open_at?: string; // ISO datetime string
+  feedback_close_at?: string; // ISO datetime string
 }
 
 export interface EventRead {
@@ -18,6 +20,8 @@ export interface EventRead {
   event_date: string | null;
   public_token: string;
   is_active: boolean;
+  feedback_open_at: string | null;
+  feedback_close_at: string | null;
   created_at: string;
 }
 

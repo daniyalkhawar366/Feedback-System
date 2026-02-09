@@ -16,6 +16,8 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
     title: '',
     description: '',
     event_date: '',
+    feedback_open_at: '',
+    feedback_close_at: '',
   });
   const [errors, setErrors] = useState<Partial<Record<keyof EventCreate, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,6 +39,15 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
       newErrors.description = 'Description must not exceed 500 characters';
     }
 
+    if (formData.feedback_open_at && formData.feedback_close_at) {
+      const openAt = new Date(formData.feedback_open_at);
+      const closeAt = new Date(formData.feedback_close_at);
+      
+      if (closeAt <= openAt) {
+        newErrors.feedback_close_at = 'Closing time must be after opening time';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -53,12 +64,14 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
         title: formData.title.trim(),
         description: formData.description?.trim() || undefined,
         event_date: formData.event_date || undefined,
+        feedback_open_at: formData.feedback_open_at || undefined,
+        feedback_close_at: formData.feedback_close_at || undefined,
       };
 
       await api.post('/events/', payload);
       
       // Reset form
-      setFormData({ title: '', description: '', event_date: '' });
+      setFormData({ title: '', description: '', event_date: '', feedback_open_at: '', feedback_close_at: '' });
       setErrors({});
       onSuccess();
     } catch (error: any) {
@@ -72,7 +85,7 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
 
   const handleClose = () => {
     if (!isSubmitting) {
-      setFormData({ title: '', description: '', event_date: '' });
+      setFormData({ title: '', description: '', event_date: '', feedback_open_at: '', feedback_close_at: '' });
       setErrors({});
       onClose();
     }
@@ -177,6 +190,68 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
               className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
               disabled={isSubmitting}
             />
+          </div>
+
+          {/* Feedback Collection Period */}
+          <div className="space-y-4 p-4 bg-purple-50 rounded-xl border border-purple-200">
+            <p className="text-sm font-semibold text-purple-900 mb-2">
+              ⏰ Feedback Collection Period (Optional)
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Feedback Open At */}
+              <div>
+                <label
+                  htmlFor="feedback_open_at"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Opens At
+                </label>
+                <input
+                  id="feedback_open_at"
+                  type="datetime-local"
+                  value={formData.feedback_open_at}
+                  onChange={(e) => {
+                    setFormData({ ...formData, feedback_open_at: e.target.value });
+                    setErrors({ ...errors, feedback_close_at: undefined });
+                  }}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* Feedback Close At */}
+              <div>
+                <label
+                  htmlFor="feedback_close_at"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Closes At
+                </label>
+                <input
+                  id="feedback_close_at"
+                  type="datetime-local"
+                  value={formData.feedback_close_at}
+                  onChange={(e) => {
+                    setFormData({ ...formData, feedback_close_at: e.target.value });
+                    setErrors({ ...errors, feedback_close_at: undefined });
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl border ${
+                    errors.feedback_close_at
+                      ? 'border-red-300 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-purple-500'
+                  } bg-white text-gray-900 focus:outline-none focus:ring-2 transition-colors`}
+                  disabled={isSubmitting}
+                />
+                {errors.feedback_close_at && (
+                  <p className="text-sm text-red-600 mt-1">{errors.feedback_close_at}</p>
+                )}
+              </div>
+            </div>
+            
+            <p className="text-xs text-gray-600">
+              Set when attendees can submit feedback. If not set, feedback will be open indefinitely.
+            </p>
           </div>
 
           {/* Action Buttons */}
