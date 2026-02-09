@@ -73,10 +73,7 @@ def handle_text_feedback(
         event_id=event.id,
         input_type="text",
         raw_text=text,
-        normalized_text=validation_result["clean_text"],
-        quality_decision=validation_result["decision"],
-        quality_flags=json.dumps(validation_result.get("flags", [])),
-        validated_at=datetime.utcnow()
+        normalized_text=validation_result["clean_text"]
     )
 
     session.add(feedback)
@@ -137,10 +134,7 @@ def handle_audio_feedback(
         normalized_text=validation_result["clean_text"],
         audio_path=audio_path,
         audio_duration_sec=transcription_result.get("audio_duration"),
-        language=transcription_result.get("language"),
-        quality_decision=validation_result["decision"],
-        quality_flags=json.dumps(validation_result.get("flags", [])),
-        validated_at=datetime.utcnow()
+        language=transcription_result.get("language")
     )
 
     session.add(feedback)
@@ -170,11 +164,10 @@ def list_event_feedback(session: Session, event_id: int):
             Feedback.input_type,
             Feedback.normalized_text,
             Feedback.audio_path,
-            Feedback.quality_decision,
-            Feedback.quality_flags,
             Feedback.created_at,
             FeedbackAnalysis.sentiment,
             FeedbackAnalysis.confidence,
+            FeedbackAnalysis.intent,
         )
         .outerjoin(
             FeedbackAnalysis,
@@ -195,8 +188,7 @@ def list_event_feedback(session: Session, event_id: int):
             "audio_path": f"http://localhost:8000/{row.audio_path}" if row.audio_path else None,
             "sentiment": row.sentiment,
             "confidence": row.confidence,
-            "quality_decision": row.quality_decision,
-            "quality_flags": row.quality_flags,
+            "intent": row.intent,
             "created_at": row.created_at,
         }
         for row in results
@@ -223,12 +215,10 @@ def get_feedback_detail(session: Session, feedback_id: int, event_id: int):
             Feedback.raw_text,
             Feedback.normalized_text,
             Feedback.audio_path,
-            Feedback.quality_decision,
-            Feedback.quality_flags,
             Feedback.created_at,
             FeedbackAnalysis.sentiment,
             FeedbackAnalysis.confidence,
-            FeedbackAnalysis.margin,
+            FeedbackAnalysis.intent,
         )
         .join(
             FeedbackAnalysis,
@@ -260,9 +250,7 @@ def get_feedback_detail(session: Session, feedback_id: int, event_id: int):
         "audio_path": audio_url,
         "sentiment": result.sentiment,
         "confidence": result.confidence,
-        "margin": result.margin,
-        "quality_decision": result.quality_decision,
-        "quality_flags": json.loads(result.quality_flags) if result.quality_flags else [],
+        "intent": result.intent,
         "created_at": result.created_at,
     }
 

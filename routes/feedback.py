@@ -50,7 +50,7 @@ def submit_text_feedback(
         "id": feedback.id,
         "sentiment": None,  # Will be filled by LLM during analysis pipeline
         "confidence": None,
-        "decision": feedback.quality_decision
+        "decision": "accepted"  # All feedback accepted, classification happens during report generation
     }
 
 
@@ -103,5 +103,5 @@ def submit_audio_feedback(
         "id": feedback.id,
         "sentiment": None,  # Will be filled by LLM during analysis pipeline
         "confidence": None,
-        "decision": feedback.quality_decision
+        "decision": "accepted"  # All feedback accepted, classification happens during report generation
     }

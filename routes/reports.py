@@ -1,68 +1,50 @@
 """
-API routes for consensus report generation
+API routes for feedback analysis and report generation.
+
+Three-step architecture:
+1. Per-feedback classification (parallel)
+2. Analytics aggregation (pure Python)
+3. Event report generation (single LLM call)
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from sqlmodel import Session, select
 from db.db import SessionDep
-from db.model import Event, Feedback, EventReport, FeedbackAnalysis, Speaker
+from db.model import Event, EventReport, EventAnalytics, Speaker
 from helpers.auth import get_current_speaker
-from consensus.report_generator import generate_report_for_event
-from consensus.simple_feedback_report import generate_simple_report
+from consensus.pipeline import run_analysis_sync
 import time
-import json
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 
-def clean_technical_language(text: str) -> str:
-    """
-    Remove technical jargon from consensus output to make it user-friendly.
-    """
-    import re
-    
-    # Remove technical patterns like "split (lead=HELPED 75%)"
-    text = re.sub(r'\s*-\s*split\s*\([^)]+\)\s*-\s*', ' - ', text)
-    
-    # Remove "reasons: ..." technical details
-    text = re.sub(r'\s*-\s*reasons:.*$', '', text)
-    
-    # Remove stance-sentiment mismatch details
-    text = re.sub(r'Stance-sentiment mismatch.*$', '', text)
-    
-    # Remove lead= patterns
-    text = re.sub(r'\s*\(lead=[^)]+\)', '', text)
-    
-    # Remove confidence scores in parentheses
-    text = re.sub(r'\s*\(confidence\s+[\d.]+[^)]*\)', '', text)
-    
-    # Remove "needs stronger evidence"
-    text = re.sub(r';\s*needs stronger evidence', '', text)
-    
-    # Clean up multiple spaces
-    text = re.sub(r'\s+', ' ', text)
-    
-    # Clean up double asterisks (markdown bold)
-    text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
-    
-    return text.strip()
 
 
 @router.post("/events/{event_id}/generate")
 async def generate_event_report(
     event_id: int,
     session: SessionDep,
-    min_feedback: int = 5,
+    min_feedback: int = 3,
+    model: str = None,
     current_speaker: Speaker = Depends(get_current_speaker)
 ):
     """
-    Generate comprehensive consensus report for an event.
+    Generate comprehensive feedback analysis report for an event.
     
-    - **event_id**: ID of the event to generate report for
-    - **min_feedback**: Minimum number of ACCEPT-quality feedback required (default: 5)
+    Architecture:
+    - Step 1: Classify each feedback in parallel (sentiment, intent, aspects)
+    - Step 2: Aggregate results into analytics (no LLM, pure Python)
+    - Step 3: Generate professional report (single LLM call)
     
-    Returns the generated report with summary, highlights, and concerns.
-    Processing time: ~30-90 seconds depending on feedback count.
+    Args:
+        event_id: ID of the event to analyze
+        min_feedback: Minimum number of feedbacks required (default: 3)
+        model: LLM model for classification (default: from env GROQ_MODEL)
+    
+    Returns:
+        Generated report with analytics and insights
+        
+    Processing time: ~10-60 seconds depending on feedback count
     """
     
     # Check if event exists and belongs to speaker
@@ -73,161 +55,84 @@ async def generate_event_report(
     if event.speaker_id != current_speaker.id:
         raise HTTPException(status_code=403, detail="You don't have access to this event")
     
+    # Quick feedback count check
+    from db.model import Feedback
+    feedback_count = session.exec(
+        select(Feedback).where(Feedback.event_id == event_id)
+    ).all()
+    
+    if len(feedback_count) < min_feedback:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Need at least {min_feedback} feedbacks to generate a report. Found {len(feedback_count)}."
+        )
+    
+    # Update event status
+    event.analysis_status = "processing"
+    session.commit()
+    
     try:
         start_time = time.time()
         
-        # Fetch feedback with sentiment analysis
-        feedback_query = (
-            select(Feedback, FeedbackAnalysis.sentiment)
-            .outerjoin(FeedbackAnalysis, FeedbackAnalysis.feedback_id == Feedback.id)
-            .where(Feedback.event_id == event_id)
-            .where(Feedback.quality_decision == "ACCEPT")
-        )
-        results = session.exec(feedback_query).all()
-        
-        print(f"📊 Found {len(results)} ACCEPT-quality feedback for event {event_id}")
-        
-        if len(results) < min_feedback:
-            # Lower threshold - 3 is enough for basic report
-            if len(results) < 3:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Need at least 3 quality feedback to generate a report. Found {len(results)}."
-                )
-        
-        # Prepare feedback data
-        feedbacks = [
-            {
-                "text": fb.normalized_text or fb.raw_text or "",
-                "sentiment": sentiment or "Neutral"
-            }
-            for fb, sentiment in results
-        ]
-        
-        print(f"📝 Generating report for {len(feedbacks)} feedback responses...")
-        
-        # Generate simple, actionable report with dimension extraction
-        try:
-            report_result = generate_simple_report(feedbacks, event.title)
-            print(f"✅ Report generated successfully: {len(report_result.get('positive_themes', []))} themes, {len(report_result.get('improvement_areas', []))} improvements")
-            print(f"🔍 DEBUG: report_result keys: {report_result.keys()}")
-            
-            # Save extracted dimensions to database
-            dimensions = report_result.get('dimensions', [])
-            print(f"🔍 DEBUG: Got {len(dimensions)} dimensions from report")
-            
-            if dimensions:
-                print(f"💾 Saving {len(dimensions)} dimension analyses to database...")
-                saved_count = 0
-                
-                for i, (fb_dict, dimension) in enumerate(zip(feedbacks, dimensions)):
-                    print(f"🔍 DEBUG [{i}]: Processing feedback text: {fb_dict['text'][:50]}...")
-                    print(f"🔍 DEBUG [{i}]: Dimension - theme: {dimension.theme}, sentiment: {dimension.sentiment}")
-                    
-                    # Find the feedback record by matching text
-                    fb_record = session.exec(
-                        select(Feedback)
-                        .where(Feedback.event_id == event_id)
-                        .where(Feedback.normalized_text == fb_dict['text'])
-                    ).first()
-                    
-                    if fb_record:
-                        print(f"🔍 DEBUG [{i}]: Found feedback record id={fb_record.id}")
-                        # Check if analysis already exists
-                        existing = session.exec(
-                            select(FeedbackAnalysis)
-                            .where(FeedbackAnalysis.feedback_id == fb_record.id)
-                        ).first()
-                        
-                        if existing:
-                            # Update existing record with full dimensions
-                            existing.theme = dimension.theme
-                            existing.sentiment = dimension.sentiment.value if hasattr(dimension.sentiment, 'value') else str(dimension.sentiment)
-                            existing.emotion = dimension.emotion.value if dimension.emotion and hasattr(dimension.emotion, 'value') else (str(dimension.emotion) if dimension.emotion else None)
-                            existing.impact_direction = dimension.impact_direction.value if hasattr(dimension.impact_direction, 'value') else str(dimension.impact_direction)
-                            existing.is_against = dimension.is_against.value if hasattr(dimension.is_against, 'value') else str(dimension.is_against)
-                            existing.confidence = dimension.confidence
-                            existing.relevancy = dimension.relevancy
-                            existing.evidence_type = dimension.evidence_type.value if hasattr(dimension.evidence_type, 'value') else str(dimension.evidence_type)
-                            existing.is_critical_opinion = dimension.is_critical_opinion
-                            existing.risk_flag = dimension.risk_flag
-                        else:
-                            # Create new analysis record
-                            analysis = FeedbackAnalysis(
-                                feedback_id=fb_record.id,
-                                theme=dimension.theme,
-                                sentiment=dimension.sentiment.value if hasattr(dimension.sentiment, 'value') else str(dimension.sentiment),
-                                emotion=dimension.emotion.value if dimension.emotion and hasattr(dimension.emotion, 'value') else (str(dimension.emotion) if dimension.emotion else None),
-                                impact_direction=dimension.impact_direction.value if hasattr(dimension.impact_direction, 'value') else str(dimension.impact_direction),
-                                is_against=dimension.is_against.value if hasattr(dimension.is_against, 'value') else str(dimension.is_against),
-                                confidence=dimension.confidence,
-                                relevancy=dimension.relevancy,
-                                evidence_type=dimension.evidence_type.value if hasattr(dimension.evidence_type, 'value') else str(dimension.evidence_type),
-                                is_critical_opinion=dimension.is_critical_opinion,
-                                risk_flag=dimension.risk_flag
-                            )
-                            session.add(analysis)
-                            saved_count += 1
-                            print(f"✅ DEBUG [{i}]: Created new FeedbackAnalysis record")
-                    else:
-                        print(f"⚠️ DEBUG [{i}]: Could not find feedback record for text: {fb_dict['text'][:50]}")
-                
-                session.commit()
-                print(f"✅ Saved {saved_count} dimension analyses to database")
-            else:
-                print(f"⚠️ WARNING: No dimensions returned from report generation!")
-        except Exception as e:
-            print(f"❌ Error in generate_simple_report: {e}")
-            import traceback
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"Failed to generate report: {str(e)}")
+        # Run the three-step pipeline (await since it's async)
+        analytics, report = await run_analysis_sync(session, event_id, model=model)
         
         generation_time = time.time() - start_time
         
-        # Save to database
-        event_report = EventReport(
-            event_id=event_id,
-            category="FEEDBACK_RETROSPECTIVE",
-            main_summary=report_result["overall_summary"],
-            conflicting_statement="",
-            top_weighted_points=json.dumps([]),
-            what_we_agree_on=json.dumps(report_result["positive_themes"]),
-            where_we_disagree=json.dumps([
-                f"{item['issue']} → {item['suggestion']}" 
-                for item in report_result["improvement_areas"]
-            ]),
-            what_to_decide_next=json.dumps([]),
-            feedback_count=len(feedbacks),
-            generation_time_seconds=generation_time,
-        )
+        # Fetch the saved report from database
+        latest_report = session.exec(
+            select(EventReport)
+            .where(EventReport.event_id == event_id)
+            .order_by(EventReport.created_at.desc())
+        ).first()
         
-        session.add(event_report)
-        session.commit()
-        session.refresh(event_report)
+        # Construct sentiment_distribution from analytics
+        total = analytics.get("total_responses", 1)  # Avoid division by zero
+        sentiment_distribution = {
+            "positive": {"count": analytics.get("positive_count", 0), "percentage": (analytics.get("positive_count", 0) / total) * 100},
+            "neutral": {"count": analytics.get("neutral_count", 0), "percentage": (analytics.get("neutral_count", 0) / total) * 100},
+            "negative": {"count": analytics.get("negative_count", 0), "percentage": (analytics.get("negative_count", 0) / total) * 100}
+        }
         
         return {
-            "report_id": event_report.id,
+            "report_id": latest_report.id if latest_report else None,
             "event_id": event_id,
             "event_title": event.title,
             "category": "FEEDBACK_RETROSPECTIVE",
-            "feedback_count": len(feedbacks),
+            "feedback_count": analytics.get("total_responses", 0),
             "generation_time": round(generation_time, 2),
+            "generated_at": latest_report.created_at.isoformat() if latest_report else None,
             "summary": {
-                "main_summary": report_result["overall_summary"],
+                "main_summary": report.get("executive_summary", ""),
                 "conflicting_statement": "",
                 "top_weighted_points": []
             },
-            "highlights": report_result["positive_themes"],
-            "concerns": [
-                f"{item['issue']} → {item['suggestion']}" 
-                for item in report_result["improvement_areas"]
-            ],
-            "next_steps": [],
+            "analytics": {
+                "satisfaction_score": analytics.get("satisfaction_score", 0),
+                "sentiment_distribution": sentiment_distribution,
+                "top_strengths": analytics.get("top_strengths", {}),
+                "top_issues": analytics.get("top_issues", {}),
+                "intent_summary": analytics.get("intent_summary", {})
+            },
+            "report": {
+                "executive_summary": report.get("executive_summary", ""),
+                "strengths": report.get("strengths", ""),
+                "improvements": report.get("improvements", ""),
+                "recommendations": report.get("recommendations", "")
+            },
+            "highlights": [s.strip() for s in report.get("strengths", "").split("\n") if s.strip()],
+            "concerns": [s.strip() for s in report.get("improvements", "").split("\n") if s.strip()],
+            "next_steps": [s.strip() for s in report.get("recommendations", "").split("\n") if s.strip()]
         }
         
     except ValueError as e:
+        event.analysis_status = "pending"
+        session.commit()
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        event.analysis_status = "pending"
+        session.commit()
+        
         # Log the full error for debugging
         import traceback
         print("\n❌ ERROR generating report:")
@@ -238,10 +143,67 @@ async def generate_event_report(
         if "rate_limit" in error_str.lower() or "429" in error_str:
             raise HTTPException(
                 status_code=429, 
-                detail="API rate limit reached. Please wait a moment and try again. Consider upgrading your API tier for higher limits."
+                detail="API rate limit reached. Please wait a moment and try again."
             )
         
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
+
+
+@router.get("/events/{event_id}/analytics")
+async def get_event_analytics(
+    event_id: int,
+    session: SessionDep,
+    current_speaker: Speaker = Depends(get_current_speaker)
+):
+    """
+    Get aggregated analytics for an event.
+    
+    Returns sentiment distribution, top strengths/issues, and satisfaction score.
+    """
+    
+    # Verify ownership
+    event = session.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
+    
+    if event.speaker_id != current_speaker.id:
+        raise HTTPException(status_code=403, detail="You don't have access to this event")
+    
+    # Fetch analytics
+    analytics = session.get(EventAnalytics, event_id)
+    
+    if not analytics:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"No analytics found for event {event_id}. Generate a report first."
+        )
+    
+    total = analytics.total_responses
+    
+    return {
+        "event_id": event_id,
+        "event_title": event.title,
+        "total_responses": total,
+        "satisfaction_score": analytics.satisfaction_score,
+        "sentiment_distribution": {
+            "positive": {
+                "count": analytics.positive_count,
+                "percentage": round((analytics.positive_count / total) * 100, 1) if total > 0 else 0
+            },
+            "neutral": {
+                "count": analytics.neutral_count,
+                "percentage": round((analytics.neutral_count / total) * 100, 1) if total > 0 else 0
+            },
+            "negative": {
+                "count": analytics.negative_count,
+                "percentage": round((analytics.negative_count / total) * 100, 1) if total > 0 else 0
+            }
+        },
+        "top_strengths": analytics.top_strengths or {},
+        "top_issues": analytics.top_issues or {},
+        "intent_summary": analytics.intent_summary or {},
+        "generated_at": analytics.generated_at
+    }
 
 
 @router.get("/events/{event_id}/latest")
@@ -251,7 +213,7 @@ async def get_latest_report(
     current_speaker: Speaker = Depends(get_current_speaker)
 ):
     """
-    Get the most recent consensus report for an event.
+    Get the most recent report for an event.
     
     Returns 404 if no report has been generated yet.
     """
@@ -267,7 +229,7 @@ async def get_latest_report(
     statement = (
         select(EventReport)
         .where(EventReport.event_id == event_id)
-        .order_by(EventReport.generated_at.desc())
+        .order_by(EventReport.created_at.desc())
     )
     
     report = session.exec(statement).first()
@@ -275,35 +237,55 @@ async def get_latest_report(
     if not report:
         raise HTTPException(
             status_code=404, 
-            detail=f"No report found for event {event_id}. Generate one first using POST /api/reports/events/{event_id}/generate"
+            detail=f"No report found for event {event_id}. Generate one first."
         )
     
-    # Parse JSON fields
-    highlights = json.loads(report.what_we_agree_on) if report.what_we_agree_on else []
-    concerns = json.loads(report.where_we_disagree) if report.where_we_disagree else []
-    next_steps = json.loads(report.what_to_decide_next) if report.what_to_decide_next else []
+    # Fetch analytics to include in response
+    analytics = session.get(EventAnalytics, event_id)
     
-    # Clean technical language for user-friendly presentation
-    highlights = [clean_technical_language(h) for h in highlights]
-    concerns = [clean_technical_language(c) for c in concerns]
-    next_steps = [clean_technical_language(n) for n in next_steps]
+    # Construct sentiment distribution from analytics
+    sentiment_distribution = {}
+    if analytics:
+        total = analytics.total_responses or 1  # Avoid division by zero
+        sentiment_distribution = {
+            "positive": {"count": analytics.positive_count, "percentage": (analytics.positive_count / total) * 100},
+            "neutral": {"count": analytics.neutral_count, "percentage": (analytics.neutral_count / total) * 100},
+            "negative": {"count": analytics.negative_count, "percentage": (analytics.negative_count / total) * 100}
+        }
     
     return {
         "report_id": report.id,
         "event_id": report.event_id,
-        "category": report.category,
-        "feedback_count": report.feedback_count,
-        "generated_at": report.generated_at,
+        "event_title": event.title,
+        "category": "FEEDBACK_RETROSPECTIVE",
+        "feedback_count": analytics.total_responses if analytics else 0,
+        "generated_at": report.created_at.isoformat(),
         "generation_time": report.generation_time_seconds,
         "summary": {
-            "main_summary": report.main_summary,
-            "conflicting_statement": report.conflicting_statement,
-            "top_weighted_points": json.loads(report.top_weighted_points) if report.top_weighted_points else []
+            "main_summary": report.executive_summary,
+            "conflicting_statement": "",
+            "top_weighted_points": []
         },
-        "highlights": highlights,
-        "concerns": concerns,
-        "next_steps": next_steps,
+        "analytics": {
+            "satisfaction_score": analytics.satisfaction_score if analytics else 0,
+            "sentiment_distribution": sentiment_distribution,
+            "top_strengths": analytics.top_strengths if analytics else {},
+            "top_issues": analytics.top_issues if analytics else {},
+            "intent_summary": analytics.intent_summary if analytics else {}
+        },
+        "report": {
+            "executive_summary": report.executive_summary,
+            "strengths": report.strengths,
+            "improvements": report.improvements,
+            "recommendations": report.recommendations
+        },
+        "highlights": [s.strip() for s in (report.strengths or "").split("\n") if s.strip()],
+        "concerns": [s.strip() for s in (report.improvements or "").split("\n") if s.strip()],
+        "next_steps": [s.strip() for s in (report.recommendations or "").split("\n") if s.strip()],
+        "representative_quotes": report.representative_quotes or {}
     }
+
+
 
 
 @router.get("/events/{event_id}/history")
@@ -316,7 +298,8 @@ async def get_report_history(
     """
     Get report generation history for an event.
     
-    - **limit**: Maximum number of reports to return (default: 10)
+    Args:
+        limit: Maximum number of reports to return (default: 10)
     """
     
     # Verify ownership
@@ -330,11 +313,15 @@ async def get_report_history(
     statement = (
         select(EventReport)
         .where(EventReport.event_id == event_id)
-        .order_by(EventReport.generated_at.desc())
+        .order_by(EventReport.created_at.desc())
         .limit(limit)
     )
     
     reports = session.exec(statement).all()
+    
+    # Get analytics for feedback count
+    analytics = session.get(EventAnalytics, event_id)
+    feedback_count = analytics.total_responses if analytics else 0
     
     return {
         "event_id": event_id,
@@ -342,8 +329,8 @@ async def get_report_history(
         "reports": [
             {
                 "report_id": r.id,
-                "generated_at": r.generated_at,
-                "feedback_count": r.feedback_count,
+                "generated_at": r.created_at,
+                "feedback_count": feedback_count,
                 "generation_time": r.generation_time_seconds,
             }
             for r in reports

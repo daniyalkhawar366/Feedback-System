@@ -1,6 +1,7 @@
 from sqlmodel import Column, SQLModel, Field, Text, JSON
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, List
+
 
 class Speaker(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -26,9 +27,10 @@ class Event(SQLModel, table=True):
     public_token: str = Field(index=True, unique=True)
     is_active: bool = Field(default=True)
 
-    # Feedback window
     feedback_open_at: Optional[datetime] = None
     feedback_close_at: Optional[datetime] = None
+
+    analysis_status: str = Field(default="pending")  # pending | processing | done
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -37,65 +39,63 @@ class Feedback(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     event_id: int = Field(foreign_key="event.id", index=True)
 
-    input_type: str  # "text" | "voice"
+    input_type: str  # text | voice
     raw_text: str = Field(sa_column=Column(Text))
     normalized_text: Optional[str] = Field(default=None, sa_column=Column(Text))
-    
+
     audio_path: Optional[str] = None
     audio_duration_sec: Optional[float] = None
     language: Optional[str] = None
 
-    quality_decision: str  # "ACCEPT" | "REJECT" | "FLAG"
-    quality_flags: Optional[str] = Field(default=None, sa_column=Column(JSON))
-    
-    validated_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class FeedbackAnalysis(SQLModel, table=True):
-    """Stores LLM-extracted dimensions for each feedback"""
     id: Optional[int] = Field(default=None, primary_key=True)
     feedback_id: int = Field(foreign_key="feedback.id", index=True, unique=True)
+
+    sentiment: str  # positive | neutral | negative
+    confidence: float  # 0.0 - 1.0
+
+    intent: str  # praise | complaint | suggestion | neutral
+    aspects: List[str] = Field(sa_column=Column(JSON))  # content, speaker, time_management, etc.
     
-    # LLM-extracted dimensions
-    theme: Optional[str] = Field(default=None, index=True)  # Primary topic cluster
-    sentiment: Optional[str] = None  # "Positive" | "Negative" | "Neutral"
-    emotion: Optional[str] = None  # JOY, ANGER, SADNESS, etc.
-    impact_direction: Optional[str] = None  # "HELPED" | "NEUTRAL" | "HURT"
-    is_against: Optional[str] = None  # "YES" | "NO" | "MIXED"
-    
-    # Signal quality
-    confidence: Optional[float] = None  # 0.0 to 1.0
-    relevancy: Optional[int] = None  # 0 to 100
-    evidence_type: Optional[str] = None  # DATA, ANECDOTE, EXPERT_OPINION, etc.
-    is_critical_opinion: Optional[bool] = None
-    risk_flag: Optional[bool] = None
-    
+    # Specific issue identification (for granular reporting)
+    issue_label: Optional[str] = None  # snake_case label like "poor_internet_connectivity"
+    evidence_quote: Optional[str] = None  # Key phrase from feedback (max 100 chars)
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class EventReport(SQLModel, table=True):
-    """Stores comprehensive consensus reports for events"""
-    id: Optional[int] = Field(default=None, primary_key=True)
-    event_id: int = Field(foreign_key="event.id", index=True)
-    category: str = Field(default="FEEDBACK_RETROSPECTIVE")
-    
-    # Summary fields
-    main_summary: Optional[str] = Field(default=None, sa_column=Column(Text))
-    conflicting_statement: Optional[str] = Field(default=None, sa_column=Column(Text))
-    top_weighted_points: Optional[str] = Field(default=None, sa_column=Column(JSON))  # JSON array of strings
-    
-    # Executive bullets
-    what_we_agree_on: Optional[str] = Field(default=None, sa_column=Column(JSON))  # JSON array
-    where_we_disagree: Optional[str] = Field(default=None, sa_column=Column(JSON))  # JSON array
-    what_to_decide_next: Optional[str] = Field(default=None, sa_column=Column(JSON))  # JSON array
-    
-    # Analytics (optional - can be computed on demand)
-    theme_board_json: Optional[str] = Field(default=None, sa_column=Column(JSON))
-    evidence_board_json: Optional[str] = Field(default=None, sa_column=Column(JSON))
-    
-    # Metadata
-    feedback_count: int
-    generation_time_seconds: Optional[float] = None
+class EventAnalytics(SQLModel, table=True):
+    event_id: int = Field(foreign_key="event.id", primary_key=True)
+
+    total_responses: int
+    positive_count: int
+    neutral_count: int
+    negative_count: int
+
+    satisfaction_score: float
+
+    top_strengths: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    top_issues: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    intent_summary: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+
     generated_at: datetime = Field(default_factory=datetime.utcnow)
 
+
+class EventReport(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    event_id: int = Field(foreign_key="event.id", index=True)
+
+    executive_summary: str = Field(sa_column=Column(Text))
+    strengths: str = Field(sa_column=Column(Text))
+    improvements: str = Field(sa_column=Column(Text))
+    recommendations: str = Field(sa_column=Column(Text))
+
+    representative_quotes: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+
+    pdf_path: Optional[str] = None
+    generation_time_seconds: Optional[float] = None
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)

@@ -1,3 +1,3 @@
 """
-Consensus reporting module for generating comprehensive feedback reports.
+Consensus-based feedback analysis system.
 """

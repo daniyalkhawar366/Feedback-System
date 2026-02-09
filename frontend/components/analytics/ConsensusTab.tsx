@@ -59,6 +59,9 @@ export default function ConsensusTab({ eventId }: ConsensusTabProps) {
       setGenerating(true);
       setError(null);
       const response = await api.post<ConsensusReport>(`/api/reports/events/${eventId}/generate`);
+      console.log('📊 Report API Response:', response.data);
+      console.log('📊 highlights:', response.data.highlights);
+      console.log('📊 concerns:', response.data.concerns);
       setReport(response.data);
       
       // Refresh feedbacks in case they changed
@@ -79,7 +82,7 @@ export default function ConsensusTab({ eventId }: ConsensusTabProps) {
   };
 
   const downloadPDF = async () => {
-    if (!reportRef.current) {
+    if (!reportRef.current || !report) {
       alert('Report content not found. Please try again.');
       return;
     }
@@ -96,16 +99,16 @@ export default function ConsensusTab({ eventId }: ConsensusTabProps) {
       pdfContainer.innerHTML = `
         <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #9333ea;">
           <h1 style="font-size: 32px; color: #111827; margin: 0 0 10px 0;">📊 Feedback Analysis Report</h1>
-          <p style="font-size: 18px; color: #6b7280; margin: 0;">${event?.title || 'Event Feedback'}</p>
+          <p style="font-size: 18px; color: #6b7280; margin: 0;">${report.event_title || 'Event Feedback'}</p>
         </div>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px;">
           <div style="background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; padding: 20px; text-align: center;">
-            <div style="font-size: 36px; font-weight: bold; color: #166534; margin-bottom: 5px;">${report.highlights.length}</div>
+            <div style="font-size: 36px; font-weight: bold; color: #166534; margin-bottom: 5px;">${report?.highlights?.length || 0}</div>
             <div style="font-size: 12px; color: #166534; font-weight: bold;">STRENGTHS</div>
           </div>
           <div style="background: #fff7ed; border: 2px solid #fdba74; border-radius: 12px; padding: 20px; text-align: center;">
-            <div style="font-size: 36px; font-weight: bold; color: #9a3412; margin-bottom: 5px;">${report.concerns.length}</div>
+            <div style="font-size: 36px; font-weight: bold; color: #9a3412; margin-bottom: 5px;">${report?.concerns?.length || 0}</div>
             <div style="font-size: 12px; color: #9a3412; font-weight: bold;">TO IMPROVE</div>
           </div>
           <div style="background: #eff6ff; border: 2px solid #93c5fd; border-radius: 12px; padding: 20px; text-align: center;">
@@ -113,17 +116,17 @@ export default function ConsensusTab({ eventId }: ConsensusTabProps) {
             <div style="font-size: 12px; color: #1e40af; font-weight: bold;">RESPONSES</div>
           </div>
           <div style="background: #faf5ff; border: 2px solid #c084fc; border-radius: 12px; padding: 20px; text-align: center;">
-            <div style="font-size: 36px; font-weight: bold; color: #7e22ce; margin-bottom: 5px;">${Math.round((feedbacks.filter(f => f.sentiment === 'Positive').length / (feedbacks.length || 1)) * 100)}%</div>
+            <div style="font-size: 36px; font-weight: bold; color: #7e22ce; margin-bottom: 5px;">${Math.round(report?.analytics?.satisfaction_score || 0)}%</div>
             <div style="font-size: 12px; color: #7e22ce; font-weight: bold;">SATISFACTION</div>
           </div>
         </div>
         
         <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
           <h3 style="font-size: 24px; color: #1e40af; margin: 0 0 15px 0;">📊 Overall Summary</h3>
-          <p style="font-size: 16px; color: #374151; line-height: 1.6; margin: 0;">${report.summary.main_summary}</p>
+          <p style="font-size: 16px; color: #374151; line-height: 1.6; margin: 0;">${report?.summary?.main_summary || 'No summary available'}</p>
         </div>
         
-        ${report.highlights.length > 0 ? `
+        ${report?.highlights && report.highlights.length > 0 ? `
           <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
             <h3 style="font-size: 24px; color: #166534; margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 2px solid #86efac;">✨ What Went Great</h3>
             ${report.highlights.map((item, i) => `
@@ -135,7 +138,7 @@ export default function ConsensusTab({ eventId }: ConsensusTabProps) {
           </div>
         ` : ''}
         
-        ${report.concerns.length > 0 ? `
+        ${report?.concerns && report.concerns.length > 0 ? `
           <div style="background: #fff7ed; border: 2px solid #f97316; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
             <h3 style="font-size: 24px; color: #9a3412; margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 2px solid #fdba74;">🎯 Action Items for Improvement</h3>
             ${report.concerns.map((item, i) => {
@@ -239,7 +242,7 @@ export default function ConsensusTab({ eventId }: ConsensusTabProps) {
 
   // Get meaningful reviews (longer than 20 characters)
   const getMeaningfulReviews = () => {
-    if (!report) return [];
+    if (!report || !report.summary || !report.summary.top_weighted_points) return [];
     return report.summary.top_weighted_points
       .filter(point => point.length > 20)
       .slice(0, 5);
@@ -347,20 +350,20 @@ export default function ConsensusTab({ eventId }: ConsensusTabProps) {
         {/* Report Header */}
         <div className="text-center pb-6 border-b-4 border-purple-200">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">📊 Feedback Analysis Report</h1>
-          <p className="text-xl text-gray-600">{event?.title || 'Event Feedback'}</p>
+          <p className="text-xl text-gray-600">{report.event_title || 'Event Feedback'}</p>
         </div>
         
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-2xl p-6 text-center shadow-lg transform hover:scale-105 transition-transform">
             <ThumbsUp className="w-10 h-10 text-green-600 mb-3 mx-auto" />
-            <div className="text-4xl font-bold text-green-700 mb-2">{report.highlights.length}</div>
+            <div className="text-4xl font-bold text-green-700 mb-2">{report?.highlights?.length || 0}</div>
             <div className="text-sm text-green-700 font-semibold uppercase tracking-wide">Strengths</div>
           </div>
           
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-2xl p-6 text-center shadow-lg transform hover:scale-105 transition-transform">
             <ThumbsDown className="w-10 h-10 text-orange-600 mb-3 mx-auto" />
-            <div className="text-4xl font-bold text-orange-700 mb-2">{report.concerns.length}</div>
+            <div className="text-4xl font-bold text-orange-700 mb-2">{report?.concerns?.length || 0}</div>
             <div className="text-sm text-orange-700 font-semibold uppercase tracking-wide">To Improve</div>
           </div>
           
@@ -373,11 +376,7 @@ export default function ConsensusTab({ eventId }: ConsensusTabProps) {
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-2xl p-6 text-center shadow-lg transform hover:scale-105 transition-transform">
             <Star className="w-10 h-10 text-purple-600 mb-3 mx-auto" />
             <div className="text-4xl font-bold text-purple-700 mb-2">
-              {(() => {
-                const posCount = feedbacks.filter(f => f.sentiment === 'Positive').length;
-                const totalCount = feedbacks.length || 1;
-                return Math.round((posCount / totalCount) * 100);
-              })()}%
+              {Math.round(report?.analytics?.satisfaction_score || 0)}%
             </div>
             <div className="text-sm text-purple-700 font-semibold uppercase tracking-wide">Satisfaction</div>
           </div>
@@ -427,13 +426,13 @@ export default function ConsensusTab({ eventId }: ConsensusTabProps) {
           </div>
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6">
             <p className="text-gray-800 leading-relaxed text-lg">
-              {report.summary.main_summary}
+              {report?.summary?.main_summary || 'No summary available'}
             </p>
           </div>
         </div>
 
         {/* Strengths */}
-        {report.highlights.length > 0 && (
+        {report?.highlights && report.highlights.length > 0 && (
           <div className="bg-white border-2 border-green-300 rounded-2xl p-8 shadow-sm">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-green-200">
               <div className="p-3 bg-green-100 rounded-xl">
@@ -459,7 +458,7 @@ export default function ConsensusTab({ eventId }: ConsensusTabProps) {
         )}
 
         {/* Areas to Improve */}
-        {report.concerns.length > 0 && (
+        {report?.concerns && report.concerns.length > 0 && (
           <div className="bg-white border-2 border-orange-300 rounded-2xl p-8 shadow-sm">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-orange-200">
               <div className="p-3 bg-orange-100 rounded-xl">
@@ -533,7 +532,7 @@ export default function ConsensusTab({ eventId }: ConsensusTabProps) {
         )}
 
         {/* Action Items */}
-        {report.next_steps.length > 0 && (
+        {report?.next_steps && report.next_steps.length > 0 && (
           <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-300 rounded-2xl p-8">
             <h3 className="text-2xl font-bold text-indigo-800 mb-6 flex items-center gap-2">
               <TrendingUp className="w-8 h-8 text-indigo-600" />
