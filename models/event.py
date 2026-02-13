@@ -33,8 +33,8 @@ class EventUpdate(BaseModel):
 
 
 class EventRead(BaseModel):
-    id: int
-    speaker_id: int
+    id: str
+    speaker_id: str
     title: str
     description: Optional[str]
     event_date: Optional[date]

@@ -1,20 +1,26 @@
-from fastapi import Depends, HTTPException,status
-from db.db import SessionDep
+"""
+Login Route - MongoDB Version (Async)
+"""
+from fastapi import HTTPException, status, APIRouter
 from helpers.security import authenticate_speaker
-from models.login import TokenResponse,LoginRequest
+from models.login import TokenResponse, LoginRequest
 from helpers.auth import create_access_token
-from fastapi import APIRouter
 
 router = APIRouter(prefix="/login", tags=["Login"])
 
+
 @router.post("/", response_model=TokenResponse)
-def login(
-    data: LoginRequest,
-    session: SessionDep,
-):
-    speaker = authenticate_speaker(
-        session, data.identifier, data.password
-    )
+async def login(data: LoginRequest):
+    """
+    Authenticate user and return JWT token.
+    
+    Args:
+        data: Login credentials (email/username and password)
+        
+    Returns:
+        JWT access token and speaker info
+    """
+    speaker = await authenticate_speaker(data.identifier, data.password)
 
     if not speaker:
         raise HTTPException(
@@ -22,11 +28,11 @@ def login(
             detail="Invalid credentials"
         )
 
-    token = create_access_token(subject=speaker.id)
+    token = create_access_token(subject=str(speaker.id))
 
     return TokenResponse(
         access_token=token,
         token_type="bearer",
-        speaker_id=speaker.id,
+        speaker_id=str(speaker.id),
         speaker_name=speaker.name
     )

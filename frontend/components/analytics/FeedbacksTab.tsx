@@ -18,7 +18,7 @@ import api from '@/utils/api';
 import type { EventFeedbackRead } from '@/types/api';
 
 interface FeedbacksTabProps {
-  eventId: number;
+  eventId: string;
 }
 
 type SentimentFilter = 'all' | 'positive' | 'negative' | 'neutral';
@@ -32,8 +32,8 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
   const [sentimentFilter, setSentimentFilter] = useState<SentimentFilter>('all');
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [audioPlaying, setAudioPlaying] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [audioPlaying, setAudioPlaying] = useState<string | null>(null);
 
   useEffect(() => {
     fetchFeedbacks();

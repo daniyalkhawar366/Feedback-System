@@ -6,12 +6,12 @@ import api from '@/utils/api';
 import type { EventFeedbackRead } from '@/types/api';
 
 interface InsightsTabProps {
-  eventId: number;
+  eventId: string;
 }
 
 interface Report {
-  report_id: number;
-  event_id: number;
+  report_id: string;
+  event_id: string;
   event_title: string;
   feedback_count: number;
   summary?: {

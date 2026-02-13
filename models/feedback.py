@@ -8,14 +8,14 @@ class FeedbackTextCreate(BaseModel):
 
 
 class FeedbackResponse(BaseModel):
-    id: int
+    id: str
     sentiment: Optional[str] = None  # Will be filled by LLM during analysis
     confidence: Optional[float] = None
     decision: str
     
 class EventFeedbackRead(BaseModel):
-    id: int
-    event_id: int
+    id: str
+    event_id: str
     input_type: str
     raw_text: Optional[str] = None
     normalized_text: Optional[str] = None

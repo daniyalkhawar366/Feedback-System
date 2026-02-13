@@ -1,19 +1,14 @@
-from fastapi import APIRouter, Depends
-from db.db import SessionDep
-
-from handlers.event import get_event_by_token
-
-from fastapi import APIRouter, Depends, UploadFile, File, Form
-from sqlmodel import Session
+"""
+Feedback Routes - MongoDB Version (Async)
+"""
+from fastapi import APIRouter, HTTPException, UploadFile, File
 import shutil
 import uuid
 from pathlib import Path
 
 from models.feedback import FeedbackTextCreate, FeedbackResponse
-from handlers.feedback import (
-    handle_text_feedback,
-    handle_audio_feedback
-)
+from handlers.feedback import handle_text_feedback, handle_audio_feedback
+from handlers.event import get_event_by_token
 
 router = APIRouter(prefix="/feedback", tags=["Public Feedback"])
 
@@ -21,33 +16,33 @@ UPLOAD_DIR = Path("uploads/audio")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
-router = APIRouter(prefix="/feedback", tags=["Public Feedback"])
-
 @router.get("/{public_token}")
-def resolve_event(public_token: str, session: SessionDep):
-    event = get_event_by_token(session, public_token)
+async def resolve_event(public_token: str):
+    """Get event details by public token."""
+    event = await get_event_by_token(public_token)
+    
     return {
-        "event_id": event.id,
+        "event_id": str(event.id),
         "title": event.title,
         "description": event.description
     }
 
 
 @router.post("/{public_token}/text", response_model=FeedbackResponse)
-def submit_text_feedback(
+async def submit_text_feedback(
     public_token: str,
-    payload: FeedbackTextCreate,
-    session: SessionDep
+    payload: FeedbackTextCreate
 ):
-    feedback = handle_text_feedback(
-        session,
-        public_token,
-        payload.text
-    )
+    """
+    Submit text feedback for an event.
+    
+    Returns feedback confirmation with ID.
+    Sentiment analysis happens during report generation.
+    """
+    feedback = await handle_text_feedback(public_token, payload.text)
 
-    # Return feedback confirmation (sentiment will be analyzed by LLM later)
     return {
-        "id": feedback.id,
+        "id": str(feedback.id),
         "sentiment": None,  # Will be filled by LLM during analysis pipeline
         "confidence": None,
         "decision": "accepted"  # All feedback accepted, classification happens during report generation
@@ -55,13 +50,16 @@ def submit_text_feedback(
 
 
 @router.post("/{public_token}/audio", response_model=FeedbackResponse)
-def submit_audio_feedback(
-    session: SessionDep,
+async def submit_audio_feedback(
     public_token: str,
     file: UploadFile = File(...)
 ):
-    from fastapi import HTTPException
+    """
+    Submit audio feedback for an event.
     
+    Audio is transcribed and validated before storage.
+    Returns feedback confirmation with ID.
+    """
     # Validate file type
     if not file.filename or not file.filename.endswith(('.webm', '.wav', '.mp3', '.m4a')):
         raise HTTPException(
@@ -80,6 +78,7 @@ def submit_audio_feedback(
             detail="File too large. Maximum size: 10MB"
         )
     
+    # Save audio file
     filename = f"{uuid.uuid4()}_{file.filename}"
     file_path = UPLOAD_DIR / filename
 
@@ -92,15 +91,11 @@ def submit_audio_feedback(
             detail=f"Failed to save audio file: {str(e)}"
         )
 
-    feedback = handle_audio_feedback(
-        session,
-        public_token,
-        str(file_path)
-    )
+    # Process audio feedback (transcribe + validate + store)
+    feedback = await handle_audio_feedback(public_token, str(file_path))
 
-    # Return feedback confirmation (sentiment will be analyzed by LLM later)
     return {
-        "id": feedback.id,
+        "id": str(feedback.id),
         "sentiment": None,  # Will be filled by LLM during analysis pipeline
         "confidence": None,
         "decision": "accepted"  # All feedback accepted, classification happens during report generation

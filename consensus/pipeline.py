@@ -9,24 +9,27 @@ Coordinates the three-step process:
 import asyncio
 from typing import List, Dict, Tuple
 from datetime import datetime
-from sqlmodel import Session, select
-from db.model import Feedback, FeedbackAnalysis, EventAnalytics, EventReport, Event
+from db.mongo_models import (
+    EventDocument, 
+    FeedbackDocument, 
+    FeedbackAnalysisDocument,
+    EventAnalyticsDocument,
+    EventReportDocument
+)
 from consensus.feedback_classifier import classify_feedbacks_parallel
 from consensus.analytics_aggregator import aggregate_feedback_analytics, format_analytics_for_display
 from consensus.report_generator import generate_report_with_fallback
 
 
 async def run_feedback_analysis_pipeline(
-    session: Session,
-    event_id: int,
+    event_id: str,
     model: str = None
 ) -> Tuple[Dict, Dict]:
     """
     Run the complete feedback analysis pipeline for an event.
     
     Args:
-        session: Database session
-        event_id: ID of the event to analyze
+        event_id: ID of the event to analyze (MongoDB ObjectId as string)
         model: LLM model for classification (default: from env)
         
     Returns:
@@ -35,16 +38,16 @@ async def run_feedback_analysis_pipeline(
     Steps:
         1. Fetch all feedbacks for the event
         2. Classify each feedback in parallel (Step 1)
-        3. Save classifications to FeedbackAnalysis table
+        3. Save classifications to FeedbackAnalysis collection
         4. Aggregate analytics (Step 2)
-        5. Save analytics to EventAnalytics table
+        5. Save analytics to EventAnalytics collection
         6. Generate report (Step 3)
-        7. Save report to EventReport table
+        7. Save report to EventReport collection
     """
     start_time = datetime.utcnow()
     
     # Fetch event
-    event = session.get(Event, event_id)
+    event = await EventDocument.get(event_id)
     if not event:
         raise ValueError(f"Event {event_id} not found")
     
@@ -59,12 +62,10 @@ async def run_feedback_analysis_pipeline(
     
     # Only include ACCEPTED feedbacks in report generation
     # Flagged feedbacks are shown in UI but excluded from analysis
-    feedbacks = session.exec(
-        select(Feedback).where(
-            Feedback.event_id == event_id,
-            Feedback.quality_decision == "ACCEPT"
-        )
-    ).all()
+    feedbacks = await FeedbackDocument.find(
+        FeedbackDocument.event_id == event_id,
+        FeedbackDocument.quality_decision == "ACCEPT"
+    ).to_list()
     
     if not feedbacks:
         print("⚠️ No accepted feedbacks found for this event")
@@ -75,7 +76,7 @@ async def run_feedback_analysis_pipeline(
     # Prepare feedback data for classification
     feedback_data = [
         {
-            "id": fb.id,
+            "id": str(fb.id),
             "text": fb.normalized_text or fb.raw_text
         }
         for fb in feedbacks
@@ -107,11 +108,9 @@ async def run_feedback_analysis_pipeline(
         feedback_id = classification["feedback_id"]
         
         # Check if analysis already exists
-        existing = session.exec(
-            select(FeedbackAnalysis).where(
-                FeedbackAnalysis.feedback_id == feedback_id
-            )
-        ).first()
+        existing = await FeedbackAnalysisDocument.find_one(
+            FeedbackAnalysisDocument.feedback_id == feedback_id
+        )
         
         if existing:
             # Update existing
@@ -121,9 +120,10 @@ async def run_feedback_analysis_pipeline(
             existing.aspects = classification["aspects"]
             existing.issue_label = classification.get("issue_label")
             existing.evidence_quote = classification.get("evidence_quote")
+            await existing.save()
         else:
             # Create new
-            analysis = FeedbackAnalysis(
+            analysis = FeedbackAnalysisDocument(
                 feedback_id=feedback_id,
                 sentiment=classification["sentiment"],
                 confidence=classification["confidence"],
@@ -132,9 +132,8 @@ async def run_feedback_analysis_pipeline(
                 issue_label=classification.get("issue_label"),
                 evidence_quote=classification.get("evidence_quote")
             )
-            session.add(analysis)
+            await analysis.insert()
     
-    session.commit()
     print(f"✅ Saved {len(successful)} classifications")
     
     # ============================================================
@@ -143,7 +142,7 @@ async def run_feedback_analysis_pipeline(
     print(f"📊 Aggregating analytics...")
     
     # Build feedback text mapping
-    feedback_texts = {fb.id: (fb.normalized_text or fb.raw_text) for fb in feedbacks}
+    feedback_texts = {str(fb.id): (fb.normalized_text or fb.raw_text) for fb in feedbacks}
     
     analytics = aggregate_feedback_analytics(successful, feedback_texts)
     
@@ -160,7 +159,9 @@ async def run_feedback_analysis_pipeline(
     print(f"💾 Saving analytics to database...")
     
     # Check if analytics already exist
-    existing_analytics = session.get(EventAnalytics, event_id)
+    existing_analytics = await EventAnalyticsDocument.find_one(
+        EventAnalyticsDocument.event_id == event_id
+    )
     
     if existing_analytics:
         # Update existing
@@ -173,9 +174,10 @@ async def run_feedback_analysis_pipeline(
         existing_analytics.top_issues = analytics["top_issues"]
         existing_analytics.intent_summary = analytics["intent_summary"]
         existing_analytics.generated_at = datetime.utcnow()
+        await existing_analytics.save()
     else:
         # Create new
-        event_analytics = EventAnalytics(
+        event_analytics = EventAnalyticsDocument(
             event_id=event_id,
             total_responses=analytics["total_responses"],
             positive_count=analytics["positive_count"],
@@ -186,9 +188,8 @@ async def run_feedback_analysis_pipeline(
             top_issues=analytics["top_issues"],
             intent_summary=analytics["intent_summary"]
         )
-        session.add(event_analytics)
+        await event_analytics.insert()
     
-    session.commit()
     print(f"✅ Analytics saved")
     
     # ============================================================
@@ -207,7 +208,7 @@ async def run_feedback_analysis_pipeline(
     
     generation_time = (datetime.utcnow() - start_time).total_seconds()
     
-    event_report = EventReport(
+    event_report = EventReportDocument(
         event_id=event_id,
         executive_summary=report["executive_summary"],
         strengths=report["strengths"],
@@ -217,15 +218,14 @@ async def run_feedback_analysis_pipeline(
         generation_time_seconds=generation_time
     )
     
-    session.add(event_report)
-    session.commit()
+    await event_report.insert()
     
     print(f"✅ Report saved (took {generation_time:.2f}s)")
     print(f"🎉 Pipeline complete!")
     
     # Update event status
     event.analysis_status = "done"
-    session.commit()
+    await event.save()
     
     # Return formatted data for API response
     formatted_analytics = format_analytics_for_display(analytics)
@@ -233,16 +233,15 @@ async def run_feedback_analysis_pipeline(
     return formatted_analytics, report
 
 
-async def run_analysis_sync(session: Session, event_id: int, model: str = None) -> Tuple[Dict, Dict]:
+async def run_analysis_sync(event_id: str, model: str = None) -> Tuple[Dict, Dict]:
     """
     Async wrapper for the pipeline - can be called from FastAPI async endpoints.
     
     Args:
-        session: Database session
-        event_id: Event ID to analyze
+        event_id: Event ID to analyze (MongoDB ObjectId as string)
         model: LLM model for classification
         
     Returns:
         Tuple of (analytics_dict, report_dict)
     """
-    return await run_feedback_analysis_pipeline(session, event_id, model)
+    return await run_feedback_analysis_pipeline(event_id, model)

@@ -1,40 +1,36 @@
-from sqlmodel import Session, select, func
+"""
+Analytics Handlers - MongoDB Version (Async)
+"""
 from fastapi import HTTPException, status
-from db.model import Event, Feedback, FeedbackAnalysis, Speaker
-from typing import Dict, List
-from datetime import datetime, timedelta
+from typing import Dict, List, Optional
 from collections import Counter
+from datetime import datetime, timedelta
 import json
 
+from db.mongo_models import EventDocument, FeedbackDocument, FeedbackAnalysisDocument
 
-def get_event_stats(session: Session, event_id: int, speaker_id: int) -> Dict:
+
+async def get_event_stats(event_id: str, speaker_id: str) -> Dict:
     """
     Get comprehensive statistics for a specific event
     
     Returns sentiment breakdown, quality metrics, feedback counts
     """
     # Verify speaker owns this event
-    event = session.exec(
-        select(Event).where(
-            (Event.id == event_id) & 
-            (Event.speaker_id == speaker_id)
-        )
-    ).first()
+    event = await EventDocument.get(event_id)
     
-    if not event:
+    if not event or str(event.speaker_id) != speaker_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Event not found"
         )
     
-    # Get all feedback for this event with optional analysis
-    feedback_query = session.exec(
-        select(Feedback, FeedbackAnalysis)
-        .outerjoin(FeedbackAnalysis, FeedbackAnalysis.feedback_id == Feedback.id)
-        .where(Feedback.event_id == event_id)
-    ).all()
+    # Get all feedback for this event
+    all_feedbacks = await FeedbackDocument.find(
+        FeedbackDocument.event_id == event_id
+    ).to_list()
     
-    if not feedback_query:
+    if not all_feedbacks:
         return {
             "event_id": event_id,
             "event_title": event.title,
@@ -62,7 +58,7 @@ def get_event_stats(session: Session, event_id: int, speaker_id: int) -> Dict:
         }
     
     # Process feedback data
-    total_feedback = len(feedback_query)
+    total_feedback = len(all_feedbacks)
     sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0, "pending": 0}
     quality_counts = {"ACCEPT": 0, "FLAG": 0, "REJECT": 0}
     input_counts = {"text": 0, "audio": 0}
@@ -72,7 +68,12 @@ def get_event_stats(session: Session, event_id: int, speaker_id: int) -> Dict:
     # Count non-flagged feedbacks for percentage calculations
     valid_feedback_count = 0
     
-    for feedback, analysis in feedback_query:
+    for feedback in all_feedbacks:
+        # Get analysis for this feedback
+        analysis = await FeedbackAnalysisDocument.find_one(
+            FeedbackAnalysisDocument.feedback_id == str(feedback.id)
+        )
+        
         # Only count ACCEPTED feedbacks for sentiment distribution percentages
         if feedback.quality_decision == "ACCEPT":
             valid_feedback_count += 1
@@ -136,16 +137,16 @@ def get_event_stats(session: Session, event_id: int, speaker_id: int) -> Dict:
     }
 
 
-def get_dashboard_stats(session: Session, speaker_id: int) -> Dict:
+async def get_dashboard_stats(speaker_id: str) -> Dict:
     """
     Get overview statistics across all speaker's events
     
     Used for speaker dashboard
     """
     # Get all events for this speaker
-    events = session.exec(
-        select(Event).where(Event.speaker_id == speaker_id)
-    ).all()
+    events = await EventDocument.find(
+        EventDocument.speaker_id == speaker_id
+    ).to_list()
     
     if not events:
         return {
@@ -161,25 +162,36 @@ def get_dashboard_stats(session: Session, speaker_id: int) -> Dict:
             "feedback_by_event": []
         }
     
-    event_ids = [e.id for e in events]
+    event_ids = [str(e.id) for e in events]
     
-    # Get all feedback and analysis for these events
-    all_feedback_query = session.exec(
-        select(Feedback, FeedbackAnalysis)
-        .join(FeedbackAnalysis, FeedbackAnalysis.feedback_id == Feedback.id)
-        .where(Feedback.event_id.in_(event_ids))
-    ).all()
+    # Get all feedback for these events
+    all_feedbacks = await FeedbackDocument.find(
+        {"event_id": {"$in": event_ids}}
+    ).to_list()
+    
+    # Get all analyses for the feedbacks
+    feedback_ids = [str(f.id) for f in all_feedbacks]
+    all_analyses = await FeedbackAnalysisDocument.find(
+        {"feedback_id": {"$in": feedback_ids}}
+    ).to_list()
+    
+    # Create a map of feedback_id to analysis
+    analysis_map = {str(a.feedback_id): a for a in all_analyses}
     
     # Aggregate statistics
     sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0}
     confidence_scores = []
-    total_feedback = len(all_feedback_query)
+    total_feedback = 0
     
-    for feedback, analysis in all_feedback_query:
-        sentiment = analysis.sentiment.lower()
-        if sentiment in sentiment_counts:
-            sentiment_counts[sentiment] += 1
-        confidence_scores.append(analysis.confidence)
+    for feedback in all_feedbacks:
+        analysis = analysis_map.get(str(feedback.id))
+        if analysis and analysis.sentiment:
+            total_feedback += 1
+            sentiment = analysis.sentiment.lower()
+            if sentiment in sentiment_counts:
+                sentiment_counts[sentiment] += 1
+            if analysis.confidence:
+                confidence_scores.append(analysis.confidence)
     
     # Calculate percentages
     overall_sentiment = {}
@@ -195,11 +207,11 @@ def get_dashboard_stats(session: Session, speaker_id: int) -> Dict:
     # Feedback per event
     feedback_by_event = []
     for event in events:
-        event_feedback = [f for f, a in all_feedback_query if f.event_id == event.id]
+        event_feedback_count = len([f for f in all_feedbacks if f.event_id == str(event.id)])
         feedback_by_event.append({
-            "event_id": event.id,
+            "event_id": str(event.id),
             "event_title": event.title,
-            "feedback_count": len(event_feedback)
+            "feedback_count": event_feedback_count
         })
     
     return {
@@ -212,44 +224,52 @@ def get_dashboard_stats(session: Session, speaker_id: int) -> Dict:
     }
 
 
-def get_sentiment_trends(session: Session, event_id: int, speaker_id: int) -> Dict:
+async def get_sentiment_trends(event_id: str, speaker_id: str) -> Dict:
     """
     Get sentiment trends over time for an event
     
     Returns sentiment distribution grouped by time periods
     """
     # Verify speaker owns this event
-    event = session.exec(
-        select(Event).where(
-            (Event.id == event_id) & 
-            (Event.speaker_id == speaker_id)
-        )
-    ).first()
+    event = await EventDocument.get(event_id)
     
-    if not event:
+    if not event or str(event.speaker_id) != speaker_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Event not found"
         )
     
     # Get all feedback with analysis
-    feedback_query = session.exec(
-        select(Feedback, FeedbackAnalysis)
-        .join(FeedbackAnalysis, FeedbackAnalysis.feedback_id == Feedback.id)
-        .where(Feedback.event_id == event_id)
-        .order_by(Feedback.created_at)
-    ).all()
+    all_feedbacks = await FeedbackDocument.find(
+        FeedbackDocument.event_id == event_id
+    ).sort("+created_at").to_list()
     
-    if not feedback_query:
+    if not all_feedbacks:
         return {
             "event_id": event_id,
             "total_feedback": 0,
             "trends": []
         }
     
+    # Get all analyses
+    feedback_ids = [str(f.id) for f in all_feedbacks]
+    all_analyses = await FeedbackAnalysisDocument.find(
+        {"feedback_id": {"$in": feedback_ids}}
+    ).to_list()
+    
+    # Create analysis map
+    analysis_map = {str(a.feedback_id): a for a in all_analyses}
+    
     # Group by date
     trends_by_date = {}
-    for feedback, analysis in feedback_query:
+    valid_count = 0
+    
+    for feedback in all_feedbacks:
+        analysis = analysis_map.get(str(feedback.id))
+        if not analysis or not analysis.sentiment:
+            continue
+            
+        valid_count += 1
         date_key = feedback.created_at.date().isoformat()
         if date_key not in trends_by_date:
             trends_by_date[date_key] = {
@@ -281,16 +301,15 @@ def get_sentiment_trends(session: Session, event_id: int, speaker_id: int) -> Di
     
     return {
         "event_id": event_id,
-        "total_feedback": len(feedback_query),
+        "total_feedback": valid_count,
         "trends": trends
     }
 
 
-def get_top_keywords(
-    session: Session, 
-    event_id: int, 
-    speaker_id: int,
-    sentiment_filter: str = None,
+async def get_top_keywords(
+    event_id: str, 
+    speaker_id: str,
+    sentiment_filter: Optional[str] = None,
     limit: int = 20
 ) -> Dict:
     """
@@ -299,37 +318,40 @@ def get_top_keywords(
     Can filter by sentiment (positive/negative/neutral)
     """
     # Verify speaker owns this event
-    event = session.exec(
-        select(Event).where(
-            (Event.id == event_id) & 
-            (Event.speaker_id == speaker_id)
-        )
-    ).first()
+    event = await EventDocument.get(event_id)
     
-    if not event:
+    if not event or str(event.speaker_id) != speaker_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Event not found"
         )
     
-    # Get feedback based on filter
-    query = (
-        select(Feedback, FeedbackAnalysis)
-        .join(FeedbackAnalysis, FeedbackAnalysis.feedback_id == Feedback.id)
-        .where(Feedback.event_id == event_id)
-    )
+    # Get feedback for this event
+    all_feedbacks = await FeedbackDocument.find(
+        FeedbackDocument.event_id == event_id
+    ).to_list()
     
-    if sentiment_filter and sentiment_filter.lower() in ["positive", "negative", "neutral"]:
-        query = query.where(FeedbackAnalysis.sentiment == sentiment_filter.capitalize())
-    
-    feedback_query = session.exec(query).all()
-    
-    if not feedback_query:
+    if not all_feedbacks:
         return {
             "event_id": event_id,
             "sentiment_filter": sentiment_filter,
             "keywords": []
         }
+    
+    # Get analyses with optional sentiment filter
+    feedback_ids = [str(f.id) for f in all_feedbacks]
+    
+    if sentiment_filter and sentiment_filter.lower() in ["positive", "negative", "neutral"]:
+        all_analyses = await FeedbackAnalysisDocument.find(
+            {"feedback_id": {"$in": feedback_ids}, "sentiment": sentiment_filter.capitalize()}
+        ).to_list()
+    else:
+        all_analyses = await FeedbackAnalysisDocument.find(
+            {"feedback_id": {"$in": feedback_ids}}
+        ).to_list()
+    
+    # Create feedback map
+    feedback_map = {str(f.id): f for f in all_feedbacks}
     
     # Extract words from feedback text
     stop_words = {
@@ -339,7 +361,11 @@ def get_top_keywords(
     }
     
     all_words = []
-    for feedback, analysis in feedback_query:
+    for analysis in all_analyses:
+        feedback = feedback_map.get(str(analysis.feedback_id))
+        if not feedback:
+            continue
+            
         text = feedback.normalized_text or feedback.raw_text
         # Simple word extraction
         words = text.lower().split()
@@ -348,6 +374,14 @@ def get_top_keywords(
             word = ''.join(c for c in word if c.isalnum())
             if len(word) > 3 and word not in stop_words:
                 all_words.append(word)
+    
+    if not all_words:
+        return {
+            "event_id": event_id,
+            "sentiment_filter": sentiment_filter or "all",
+            "total_keywords_extracted": 0,
+            "keywords": []
+        }
     
     # Count words
     word_counts = Counter(all_words)
@@ -364,30 +398,25 @@ def get_top_keywords(
     }
 
 
-def get_quality_metrics(session: Session, event_id: int, speaker_id: int) -> Dict:
+async def get_quality_metrics(event_id: str, speaker_id: str) -> Dict:
     """
     Get quality gate analysis for all feedback in an event
     
     Shows breakdown of quality flags and decisions
     """
     # Verify speaker owns this event
-    event = session.exec(
-        select(Event).where(
-            (Event.id == event_id) & 
-            (Event.speaker_id == speaker_id)
-        )
-    ).first()
+    event = await EventDocument.get(event_id)
     
-    if not event:
+    if not event or str(event.speaker_id) != speaker_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Event not found"
         )
     
     # Get all feedback for this event
-    all_feedback = session.exec(
-        select(Feedback).where(Feedback.event_id == event_id)
-    ).all()
+    all_feedback = await FeedbackDocument.find(
+        FeedbackDocument.event_id == event_id
+    ).to_list()
     
     if not all_feedback:
         return {

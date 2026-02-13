@@ -24,7 +24,7 @@ class FeedbackCollectionPeriod(BaseModel):
     end_date: Optional[str] = None
 
 class EventStats(BaseModel):
-    event_id: int
+    event_id: str
     event_title: str
     event_date: Optional[str] = None
     total_feedback: int
@@ -36,7 +36,7 @@ class EventStats(BaseModel):
     feedback_collection_period: FeedbackCollectionPeriod
 
 class FeedbackByEvent(BaseModel):
-    event_id: int
+    event_id: str
     event_title: str
     feedback_count: int
 
@@ -59,7 +59,7 @@ class TrendDataPoint(BaseModel):
     neutral_pct: float
 
 class SentimentTrends(BaseModel):
-    event_id: int
+    event_id: str
     total_feedback: int
     trends: List[TrendDataPoint]
 
@@ -69,7 +69,7 @@ class Keyword(BaseModel):
     percentage: float
 
 class TopKeywords(BaseModel):
-    event_id: int
+    event_id: str
     sentiment_filter: str
     total_keywords_extracted: int
     keywords: List[Keyword]
@@ -79,7 +79,7 @@ class QualityFlag(BaseModel):
     count: int
 
 class QualityMetrics(BaseModel):
-    event_id: int
+    event_id: str
     total_feedback: int
     quality_decision_breakdown: QualityBreakdown
     common_flags: List[QualityFlag]

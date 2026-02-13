@@ -1,5 +1,9 @@
-
+"""
+Analytics Routes - MongoDB Version (Async)
+"""
 from fastapi import APIRouter, Depends, HTTPException, Query
+from collections import Counter
+
 from handlers.analytics import (
     get_event_stats,
     get_dashboard_stats,
@@ -14,16 +18,15 @@ from models.analytics import (
     TopKeywords,
     QualityMetrics
 )
-from db.db import SessionDep
-from db.model import Speaker
 from helpers.auth import get_current_speaker
+from db.mongo_models import SpeakerDocument, EventDocument, FeedbackDocument, FeedbackAnalysisDocument
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
+
 @router.get("/dashboard", response_model=DashboardStats)
-def get_dashboard_stats_route(
-    session: SessionDep,
-    current_speaker: Speaker = Depends(get_current_speaker)
+async def get_dashboard_stats_route(
+    current_speaker: SpeakerDocument = Depends(get_current_speaker)
 ):
     """
     Get overview statistics across all speaker's events
@@ -34,14 +37,13 @@ def get_dashboard_stats_route(
     - Average confidence across all feedback
     - Feedback count per event
     """
-    return get_dashboard_stats(session, current_speaker.id)
+    return await get_dashboard_stats(str(current_speaker.id))
 
 
 @router.get("/events/{event_id}/stats", response_model=EventStats)
-def get_event_stats_route(
-    event_id: int,
-    session: SessionDep,
-    current_speaker: Speaker = Depends(get_current_speaker)
+async def get_event_stats_route(
+    event_id: str,
+    current_speaker: SpeakerDocument = Depends(get_current_speaker)
 ):
     """
     Get detailed statistics for a specific event
@@ -54,14 +56,13 @@ def get_event_stats_route(
     - Average confidence score
     - Feedback collection period
     """
-    return get_event_stats(session, event_id, current_speaker.id)
+    return await get_event_stats(event_id, str(current_speaker.id))
 
 
 @router.get("/events/{event_id}/trends", response_model=SentimentTrends)
-def get_sentiment_trends_route(
-    event_id: int,
-    session: SessionDep,
-    current_speaker: Speaker = Depends(get_current_speaker)
+async def get_sentiment_trends_route(
+    event_id: str,
+    current_speaker: SpeakerDocument = Depends(get_current_speaker)
 ):
     """
     Get sentiment trends over time for an event
@@ -69,14 +70,13 @@ def get_sentiment_trends_route(
     Returns sentiment distribution grouped by date
     Useful for tracking feedback sentiment changes during/after event
     """
-    return get_sentiment_trends(session, event_id, current_speaker.id)
+    return await get_sentiment_trends(event_id, str(current_speaker.id))
 
 
 @router.get("/events/{event_id}/keywords", response_model=TopKeywords)
-def get_keywords_route(
-    event_id: int,
-    session: SessionDep,
-    current_speaker: Speaker = Depends(get_current_speaker),
+async def get_keywords_route(
+    event_id: str,
+    current_speaker: SpeakerDocument = Depends(get_current_speaker),
     sentiment: str = Query(None, description="Filter by sentiment: positive, negative, or neutral")
 ):
     """
@@ -89,14 +89,13 @@ def get_keywords_route(
     - Top keywords with frequency and percentage
     - Useful for understanding what attendees liked/didn't like
     """
-    return get_top_keywords(session, event_id, current_speaker.id, sentiment)
+    return await get_top_keywords(event_id, str(current_speaker.id), sentiment)
 
 
 @router.get("/events/{event_id}/quality", response_model=QualityMetrics)
-def get_quality_metrics_route(
-    event_id: int,
-    session: SessionDep,
-    current_speaker: Speaker = Depends(get_current_speaker)
+async def get_quality_metrics_route(
+    event_id: str,
+    current_speaker: SpeakerDocument = Depends(get_current_speaker)
 ):
     """
     Get quality gate analysis for feedback
@@ -106,14 +105,13 @@ def get_quality_metrics_route(
     - Common quality flags that were triggered
     - Helps identify recurring quality issues
     """
-    return get_quality_metrics(session, event_id, current_speaker.id)
+    return await get_quality_metrics(event_id, str(current_speaker.id))
 
 
 @router.get("/events/{event_id}/dimensions")
-def get_dimension_analytics(
-    event_id: int,
-    session: SessionDep,
-    current_speaker: Speaker = Depends(get_current_speaker)
+async def get_dimension_analytics(
+    event_id: str,
+    current_speaker: SpeakerDocument = Depends(get_current_speaker)
 ):
     """
     Get extracted dimension analytics for an event's feedback.
@@ -126,33 +124,43 @@ def get_dimension_analytics(
     - Evidence types
     - Critical opinions vs general feedback
     """
-    from db.model import Event, Feedback, FeedbackAnalysis
-    from sqlmodel import select
-    from collections import Counter
-    
     # Verify ownership
-    event = session.get(Event, event_id)
+    event = await EventDocument.get(event_id)
     if not event:
         raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
     
-    if event.speaker_id != current_speaker.id:
+    if str(event.speaker_id) != str(current_speaker.id):
         raise HTTPException(status_code=403, detail="You don't have access to this event")
     
-    # Get all analyzed feedback
-    query = (
-        select(Feedback, FeedbackAnalysis)
-        .join(FeedbackAnalysis, FeedbackAnalysis.feedback_id == Feedback.id)
-        .where(Feedback.event_id == event_id)
-    )
-    results = session.exec(query).all()
+    # Get all feedback for this event
+    all_feedbacks = await FeedbackDocument.find(
+        FeedbackDocument.event_id == event_id
+    ).to_list()
     
-    if not results:
+    if not all_feedbacks:
         return {
             "event_id": event_id,
             "event_title": event.title,
             "total_analyzed": 0,
             "message": "No dimension analysis available yet. Generate a report to extract dimensions."
         }
+    
+    # Get all analyses
+    feedback_ids = [str(f.id) for f in all_feedbacks]
+    all_analyses = await FeedbackAnalysisDocument.find(
+        {"feedback_id": {"$in": feedback_ids}}
+    ).to_list()
+    
+    if not all_analyses:
+        return {
+            "event_id": event_id,
+            "event_title": event.title,
+            "total_analyzed": 0,
+            "message": "No dimension analysis available yet. Generate a report to extract dimensions."
+        }
+    
+    # Create feedback map
+    feedback_map = {str(f.id): f for f in all_feedbacks}
     
     # Aggregate dimensions
     themes = []
@@ -164,8 +172,14 @@ def get_dimension_analytics(
     risk_flags = 0
     
     feedback_details = []
+    confidence_scores = []
+    relevancy_scores = []
     
-    for feedback, analysis in results:
+    for analysis in all_analyses:
+        feedback = feedback_map.get(str(analysis.feedback_id))
+        if not feedback:
+            continue
+            
         if analysis.theme:
             themes.append(analysis.theme)
         if analysis.sentiment:
@@ -180,9 +194,13 @@ def get_dimension_analytics(
             critical_opinions += 1
         if analysis.risk_flag:
             risk_flags += 1
+        if analysis.confidence:
+            confidence_scores.append(analysis.confidence)
+        if analysis.relevancy:
+            relevancy_scores.append(analysis.relevancy)
         
         feedback_details.append({
-            "id": feedback.id,
+            "id": str(feedback.id),
             "text": feedback.normalized_text or feedback.raw_text,
             "theme": analysis.theme,
             "sentiment": analysis.sentiment,
@@ -205,12 +223,12 @@ def get_dimension_analytics(
     return {
         "event_id": event_id,
         "event_title": event.title,
-        "total_analyzed": len(results),
+        "total_analyzed": len(all_analyses),
         "summary": {
             "critical_opinions": critical_opinions,
             "risk_flags": risk_flags,
-            "avg_confidence": sum(a.confidence for _, a in results if a.confidence) / len(results) if results else 0,
-            "avg_relevancy": sum(a.relevancy for _, a in results if a.relevancy) / len(results) if results else 0
+            "avg_confidence": sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0,
+            "avg_relevancy": sum(relevancy_scores) / len(relevancy_scores) if relevancy_scores else 0
         },
         "distributions": {
             "themes": [{"theme": theme, "count": count} for theme, count in theme_dist],

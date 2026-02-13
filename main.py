@@ -1,5 +1,8 @@
 from dotenv import load_dotenv
-from db.db import SessionDep,engine,create_db_and_tables
+# MongoDB connection (new)
+from db.mongodb import connect_to_mongo, close_mongo_connection
+# Keep SQLite for now (for migration script)
+from db.db import SessionDep, engine, create_db_and_tables
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -17,7 +20,7 @@ from routes.reports import router as reports_router
 load_dotenv()
 
 # Validate required environment variables
-required_env_vars = ["DATABASE_URL", "SECRET_KEY", "GROQ_API_KEY"]
+required_env_vars = ["MONGODB_URL", "SECRET_KEY", "GROQ_API_KEY"]
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise RuntimeError(
@@ -38,10 +41,17 @@ app.add_middleware(
 
 
 @app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
+async def on_startup():
+    """Initialize MongoDB connection and create upload directories"""
+    await connect_to_mongo()
     # Ensure uploads directory exists
     Path("uploads/audio").mkdir(parents=True, exist_ok=True)
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    """Close MongoDB connection gracefully"""
+    await close_mongo_connection()
 
 app.include_router(health_router)
 app.include_router(speaker_router)

@@ -6,7 +6,7 @@ import api from '@/utils/api';
 import type { QualityMetrics } from '@/types/api';
 
 interface QualityTabProps {
-  eventId: number;
+  eventId: string;
 }
 
 export default function QualityTab({ eventId }: QualityTabProps) {

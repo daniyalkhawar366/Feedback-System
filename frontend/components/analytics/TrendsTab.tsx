@@ -7,7 +7,7 @@ import api from '@/utils/api';
 import type { SentimentTrends } from '@/types/api';
 
 interface TrendsTabProps {
-  eventId: number;
+  eventId: string;
 }
 
 export default function TrendsTab({ eventId }: TrendsTabProps) {

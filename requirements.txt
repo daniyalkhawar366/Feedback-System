@@ -95,6 +95,13 @@ setuptools==80.9.0
 shellingham==1.5.4
 six==1.17.0
 soundfile==0.13.1
+
+# MongoDB dependencies
+motor>=3.3.0
+beanie>=1.23.0
+pymongo>=4.6.0
+
+# SQLAlchemy (keep for migration)
 SQLAlchemy==2.0.45
 sqlmodel==0.0.31
 starlette==0.50.0

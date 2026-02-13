@@ -1,5 +1,5 @@
 """
-Speaker Handler - MongoDB Version (Async)
+Speaker Handler - MongoDB Version
 
 Async handlers for speaker CRUD operations using MongoDB.
 """

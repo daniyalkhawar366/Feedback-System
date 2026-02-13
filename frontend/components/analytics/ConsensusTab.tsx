@@ -9,7 +9,7 @@ import jsPDF from 'jspdf';
 import type { ConsensusReport, ConsensusReportHistory, EventFeedbackRead, EventRead } from '@/types/api';
 
 interface ConsensusTabProps {
-  eventId: number;
+  eventId: string;
   event: EventRead | null;
 }
 

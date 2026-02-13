@@ -6,7 +6,7 @@ import api from '@/utils/api';
 import type { TopKeywords } from '@/types/api';
 
 interface KeywordsTabProps {
-  eventId: number;
+  eventId: string;
 }
 
 type SentimentFilter = 'all' | 'positive' | 'negative' | 'neutral';

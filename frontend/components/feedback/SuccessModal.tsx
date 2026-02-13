@@ -30,21 +30,13 @@ export default function SuccessModal({ isOpen, onClose, onSubmitAnother }: Succe
           Your feedback has been successfully submitted. Your input helps us create better experiences!
         </p>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={onSubmitAnother}
-            className="flex-1 py-4 px-6 bg-[#1a1917] hover:bg-[#333] text-white rounded-xl font-semibold transition-colors active:scale-[0.98]"
-          >
-            Submit Another
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 py-4 px-6 bg-[#f0ede8] hover:bg-[#e8e5df] text-[#1a1917] rounded-xl font-semibold transition-colors border border-[#e8e5df]"
-          >
-            Done
-          </button>
-        </div>
+        {/* Action Button */}
+        <button
+          onClick={onClose}
+          className="w-full py-4 px-6 bg-[#1a1917] hover:bg-[#333] text-white rounded-xl font-semibold transition-colors active:scale-[0.98]"
+        >
+          Done
+        </button>
       </div>
     </div>
   );

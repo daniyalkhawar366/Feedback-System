@@ -14,7 +14,7 @@ class SpeakerUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class SpeakerRead(BaseModel):
-    id: int
+    id: str
     name: str
     email: EmailStr
     is_active: bool

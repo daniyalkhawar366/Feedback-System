@@ -13,8 +13,8 @@ export interface EventCreate {
 }
 
 export interface EventRead {
-  id: number;
-  speaker_id: number;
+  id: string;
+  speaker_id: string;
   title: string;
   description: string | null;
   event_date: string | null;
@@ -26,7 +26,7 @@ export interface EventRead {
 }
 
 export interface EventQRResponse {
-  event_id: number;
+  event_id: string;
   feedback_url: string;
   qr_base64: string;
 }
@@ -37,15 +37,15 @@ export interface FeedbackTextCreate {
 }
 
 export interface FeedbackResponse {
-  id: number;
+  id: string;
   sentiment: string;
   confidence: number;
   decision: string;
 }
 
 export interface EventFeedbackRead {
-  id: number;
-  event_id: number;
+  id: string;
+  event_id: string;
   input_type: string;
   raw_text: string;
   normalized_text: string | null;
@@ -86,7 +86,7 @@ export interface FeedbackCollectionPeriod {
 }
 
 export interface EventStats {
-  event_id: number;
+  event_id: string;
   event_title: string;
   event_date: string | null;
   total_feedback: number;
@@ -99,7 +99,7 @@ export interface EventStats {
 }
 
 export interface FeedbackByEvent {
-  event_id: number;
+  event_id: string;
   event_title: string;
   feedback_count: number;
 }
@@ -125,7 +125,7 @@ export interface TrendDataPoint {
 }
 
 export interface SentimentTrends {
-  event_id: number;
+  event_id: string;
   total_feedback: number;
   trends: TrendDataPoint[];
 }
@@ -137,7 +137,7 @@ export interface Keyword {
 }
 
 export interface TopKeywords {
-  event_id: number;
+  event_id: string;
   sentiment_filter: string;
   total_keywords_extracted: number;
   keywords: Keyword[];
@@ -149,7 +149,7 @@ export interface QualityFlag {
 }
 
 export interface QualityMetrics {
-  event_id: number;
+  event_id: string;
   total_feedback: number;
   quality_decision_breakdown: QualityBreakdown;
   common_flags: QualityFlag[];
@@ -173,7 +173,7 @@ export interface AuthResponse {
 }
 
 export interface Speaker {
-  id: number;
+  id: string;
   username: string;
   email: string;
   name: string;
@@ -182,7 +182,7 @@ export interface Speaker {
 
 // ============= Public Feedback Models =============
 export interface EventInfoResponse {
-  event_id: number;
+  event_id: string;
   title: string;
   description: string | null;
 }
@@ -195,8 +195,8 @@ export interface ConsensusReportSummary {
 }
 
 export interface ConsensusReport {
-  report_id: number;
-  event_id: number;
+  report_id: string;
+  event_id: string;
   event_title: string;
   category: string;
   feedback_count: number;
@@ -209,10 +209,10 @@ export interface ConsensusReport {
 }
 
 export interface ConsensusReportHistory {
-  event_id: number;
+  event_id: string;
   total_reports: number;
   reports: {
-    report_id: number;
+    report_id: string;
     generated_at: string;
     feedback_count: number;
     generation_time: number | null;

@@ -28,7 +28,7 @@ import api from '@/utils/api';
 import type { EventStats } from '@/types/api';
 
 interface OverviewTabProps {
-  eventId: number;
+  eventId: string;
   stats: EventStats;
 }
 

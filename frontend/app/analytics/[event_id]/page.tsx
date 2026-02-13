@@ -18,7 +18,7 @@ export default function AnalyticsPage() {
   const params = useParams();
   const router = useRouter();
   const { speaker } = useAuth();
-  const eventId = Number(params.event_id);
+  const eventId = params.event_id as string;
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [event, setEvent] = useState<EventRead | null>(null);

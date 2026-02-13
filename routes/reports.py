@@ -1,5 +1,5 @@
 """
-API routes for feedback analysis and report generation.
+API routes for feedback analysis and report generation - MongoDB Version (Async)
 
 Three-step architecture:
 1. Per-feedback classification (parallel)
@@ -7,26 +7,21 @@ Three-step architecture:
 3. Event report generation (single LLM call)
 """
 
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from sqlmodel import Session, select
-from db.db import SessionDep
-from db.model import Event, EventReport, EventAnalytics, Speaker
-from helpers.auth import get_current_speaker
-from consensus.pipeline import run_analysis_sync
+from fastapi import APIRouter, HTTPException, Depends
 import time
+
+from db.mongo_models import EventDocument, EventReportDocument, EventAnalyticsDocument, SpeakerDocument, FeedbackDocument
+from helpers.auth import get_current_speaker
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 
-
-
 @router.post("/events/{event_id}/generate")
 async def generate_event_report(
-    event_id: int,
-    session: SessionDep,
+    event_id: str,
     min_feedback: int = 1,
     model: str = None,
-    current_speaker: Speaker = Depends(get_current_speaker)
+    current_speaker: SpeakerDocument = Depends(get_current_speaker)
 ):
     """
     Generate comprehensive feedback analysis report for an event.
@@ -48,43 +43,44 @@ async def generate_event_report(
     """
     
     # Check if event exists and belongs to speaker
-    event = session.get(Event, event_id)
+    event = await EventDocument.get(event_id)
     if not event:
         raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
     
-    if event.speaker_id != current_speaker.id:
+    if str(event.speaker_id) != str(current_speaker.id):
         raise HTTPException(status_code=403, detail="You don't have access to this event")
     
     # Quick feedback count check
-    from db.model import Feedback
-    feedback_count = session.exec(
-        select(Feedback).where(Feedback.event_id == event_id)
-    ).all()
+    feedback_list = await FeedbackDocument.find(
+        FeedbackDocument.event_id == event_id
+    ).to_list()
     
-    if len(feedback_count) < min_feedback:
+    if len(feedback_list) < min_feedback:
         raise HTTPException(
             status_code=400, 
-            detail=f"Need at least {min_feedback} feedbacks to generate a report. Found {len(feedback_count)}."
+            detail=f"Need at least {min_feedback} feedbacks to generate a report. Found {len(feedback_list)}."
         )
     
     # Update event status
     event.analysis_status = "processing"
-    session.commit()
+    await event.save()
     
     try:
         start_time = time.time()
         
-        # Run the three-step pipeline (await since it's async)
-        analytics, report = await run_analysis_sync(session, event_id, model=model)
+        # Import the async pipeline runner
+        from consensus.pipeline import run_analysis_sync
+        
+        # Run the MongoDB-based pipeline
+        analytics, report = await run_analysis_sync(event_id, model=model)
         
         generation_time = time.time() - start_time
         
         # Fetch the saved report from database
-        latest_report = session.exec(
-            select(EventReport)
-            .where(EventReport.event_id == event_id)
-            .order_by(EventReport.created_at.desc())
-        ).first()
+        latest_report = await EventReportDocument.find_one(
+            EventReportDocument.event_id == event_id,
+            sort=[("created_at", -1)]
+        )
         
         # Construct sentiment_distribution from analytics
         total = analytics.get("total_responses", 1)  # Avoid division by zero
@@ -95,7 +91,7 @@ async def generate_event_report(
         }
         
         return {
-            "report_id": latest_report.id if latest_report else None,
+            "report_id": str(latest_report.id) if latest_report else None,
             "event_id": event_id,
             "event_title": event.title,
             "category": "FEEDBACK_RETROSPECTIVE",
@@ -127,11 +123,11 @@ async def generate_event_report(
         
     except ValueError as e:
         event.analysis_status = "pending"
-        session.commit()
+        await event.save()
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         event.analysis_status = "pending"
-        session.commit()
+        await event.save()
         
         # Log the full error for debugging
         import traceback
@@ -151,9 +147,8 @@ async def generate_event_report(
 
 @router.get("/events/{event_id}/analytics")
 async def get_event_analytics(
-    event_id: int,
-    session: SessionDep,
-    current_speaker: Speaker = Depends(get_current_speaker)
+    event_id: str,
+    current_speaker: SpeakerDocument = Depends(get_current_speaker)
 ):
     """
     Get aggregated analytics for an event.
@@ -162,15 +157,17 @@ async def get_event_analytics(
     """
     
     # Verify ownership
-    event = session.get(Event, event_id)
+    event = await EventDocument.get(event_id)
     if not event:
         raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
     
-    if event.speaker_id != current_speaker.id:
+    if str(event.speaker_id) != str(current_speaker.id):
         raise HTTPException(status_code=403, detail="You don't have access to this event")
     
     # Fetch analytics
-    analytics = session.get(EventAnalytics, event_id)
+    analytics = await EventAnalyticsDocument.find_one(
+        EventAnalyticsDocument.event_id == event_id
+    )
     
     if not analytics:
         raise HTTPException(
@@ -208,9 +205,8 @@ async def get_event_analytics(
 
 @router.get("/events/{event_id}/latest")
 async def get_latest_report(
-    event_id: int, 
-    session: SessionDep,
-    current_speaker: Speaker = Depends(get_current_speaker)
+    event_id: str,
+    current_speaker: SpeakerDocument = Depends(get_current_speaker)
 ):
     """
     Get the most recent report for an event.
@@ -219,20 +215,17 @@ async def get_latest_report(
     """
     
     # Verify ownership
-    event = session.get(Event, event_id)
+    event = await EventDocument.get(event_id)
     if not event:
         raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
     
-    if event.speaker_id != current_speaker.id:
+    if str(event.speaker_id) != str(current_speaker.id):
         raise HTTPException(status_code=403, detail="You don't have access to this event")
     
-    statement = (
-        select(EventReport)
-        .where(EventReport.event_id == event_id)
-        .order_by(EventReport.created_at.desc())
+    report = await EventReportDocument.find_one(
+        EventReportDocument.event_id == event_id,
+        sort=[("created_at", -1)]
     )
-    
-    report = session.exec(statement).first()
     
     if not report:
         raise HTTPException(
@@ -241,7 +234,9 @@ async def get_latest_report(
         )
     
     # Fetch analytics to include in response
-    analytics = session.get(EventAnalytics, event_id)
+    analytics = await EventAnalyticsDocument.find_one(
+        EventAnalyticsDocument.event_id == event_id
+    )
     
     # Construct sentiment distribution from analytics
     sentiment_distribution = {}
@@ -254,7 +249,7 @@ async def get_latest_report(
         }
     
     return {
-        "report_id": report.id,
+        "report_id": str(report.id),
         "event_id": report.event_id,
         "event_title": event.title,
         "category": "FEEDBACK_RETROSPECTIVE",
@@ -286,14 +281,11 @@ async def get_latest_report(
     }
 
 
-
-
 @router.get("/events/{event_id}/history")
 async def get_report_history(
-    event_id: int, 
-    session: SessionDep, 
+    event_id: str,
     limit: int = 10,
-    current_speaker: Speaker = Depends(get_current_speaker)
+    current_speaker: SpeakerDocument = Depends(get_current_speaker)
 ):
     """
     Get report generation history for an event.
@@ -303,24 +295,21 @@ async def get_report_history(
     """
     
     # Verify ownership
-    event = session.get(Event, event_id)
+    event = await EventDocument.get(event_id)
     if not event:
         raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
     
-    if event.speaker_id != current_speaker.id:
+    if str(event.speaker_id) != str(current_speaker.id):
         raise HTTPException(status_code=403, detail="You don't have access to this event")
     
-    statement = (
-        select(EventReport)
-        .where(EventReport.event_id == event_id)
-        .order_by(EventReport.created_at.desc())
-        .limit(limit)
-    )
-    
-    reports = session.exec(statement).all()
+    reports = await EventReportDocument.find(
+        EventReportDocument.event_id == event_id
+    ).sort("-created_at").limit(limit).to_list()
     
     # Get analytics for feedback count
-    analytics = session.get(EventAnalytics, event_id)
+    analytics = await EventAnalyticsDocument.find_one(
+        EventAnalyticsDocument.event_id == event_id
+    )
     feedback_count = analytics.total_responses if analytics else 0
     
     return {
@@ -328,7 +317,7 @@ async def get_report_history(
         "total_reports": len(reports),
         "reports": [
             {
-                "report_id": r.id,
+                "report_id": str(r.id),
                 "generated_at": r.created_at,
                 "feedback_count": feedback_count,
                 "generation_time": r.generation_time_seconds,

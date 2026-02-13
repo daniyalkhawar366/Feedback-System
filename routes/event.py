@@ -1,83 +1,166 @@
-from fastapi import APIRouter,Depends, HTTPException
-from handlers.event import create_event,get_event,get_event_by_token,list_events_for_speaker,update_event,delete_event
-from db.db import SessionDep
-from models.event import EventCreate,EventRead,EventUpdate
-from helpers.qr_service import generate_qr_base64
+"""
+Event Routes - MongoDB Version (Async)
+"""
+from fastapi import APIRouter, Depends
 from dotenv import load_dotenv
-import os 
+import os
+
+from handlers.event import (
+    create_event,
+    get_event,
+    list_events_for_speaker,
+    update_event,
+    delete_event
+)
 from handlers.feedback import list_event_feedback
+from models.event import EventCreate, EventRead, EventUpdate
 from models.feedback import EventFeedbackRead
-from db.model import Speaker, Event, Feedback, FeedbackAnalysis
 from helpers.auth import get_current_speaker
-from sqlmodel import select, func
-from datetime import datetime, timedelta
+from helpers.qr_service import generate_qr_base64
+from db.mongo_models import SpeakerDocument
 
 load_dotenv()
-BASE_URL=os.getenv("BASE_URL")
+BASE_URL = os.getenv("BASE_URL")
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
+
 @router.post("/", response_model=EventRead, status_code=201)
-def create_event_route(
+async def create_event_route(
     data: EventCreate,
-    session:SessionDep,
-    current_speaker: Speaker = Depends(get_current_speaker),
+    current_speaker: SpeakerDocument = Depends(get_current_speaker),
 ):
-    return create_event(session, current_speaker.id, data)
+    """Create a new event."""
+    doc = await create_event(str(current_speaker.id), data)
+    return {
+        "id": str(doc.id),
+        "speaker_id": str(doc.speaker_id),
+        "title": doc.title,
+        "description": doc.description,
+        "event_date": doc.event_date,
+        "public_token": doc.public_token,
+        "is_active": doc.is_active,
+        "feedback_open_at": doc.feedback_open_at,
+        "feedback_close_at": doc.feedback_close_at,
+        "created_at": doc.created_at
+    }
+
 
 @router.get("/{event_id}", response_model=EventRead)
-def get_event_route(
-    event_id: int,
-    session: SessionDep,current_speaker: Speaker = Depends(get_current_speaker)
+async def get_event_route(
+    event_id: str,
+    current_speaker: SpeakerDocument = Depends(get_current_speaker)
 ):
-    return get_event(session, event_id)
+    """Get event by ID."""
+    doc = await get_event(event_id)
+    return {
+        "id": str(doc.id),
+        "speaker_id": str(doc.speaker_id),
+        "title": doc.title,
+        "description": doc.description,
+        "event_date": doc.event_date,
+        "public_token": doc.public_token,
+        "is_active": doc.is_active,
+        "feedback_open_at": doc.feedback_open_at,
+        "feedback_close_at": doc.feedback_close_at,
+        "created_at": doc.created_at
+    }
+
 
 @router.get("/", response_model=list[EventRead])
-def list_events_route(
-    session: SessionDep,
-    current_speaker: Speaker = Depends(get_current_speaker),
+async def list_events_route(
+    current_speaker: SpeakerDocument = Depends(get_current_speaker),
 ):
-    return list_events_for_speaker(session, current_speaker.id)
+    """List all events for the current speaker."""
+    docs = await list_events_for_speaker(str(current_speaker.id))
+    return [
+        {
+            "id": str(doc.id),
+            "speaker_id": str(doc.speaker_id),
+            "title": doc.title,
+            "description": doc.description,
+            "event_date": doc.event_date,
+            "public_token": doc.public_token,
+            "is_active": doc.is_active,
+            "feedback_open_at": doc.feedback_open_at,
+            "feedback_close_at": doc.feedback_close_at,
+            "created_at": doc.created_at
+        }
+        for doc in docs
+    ]
+
 
 @router.get("/{event_id}/qr")
-def get_event_qr(
-    event_id: int,
-    session: SessionDep,current_speaker: Speaker = Depends(get_current_speaker)
+async def get_event_qr(
+    event_id: str,
+    current_speaker: SpeakerDocument = Depends(get_current_speaker)
 ):
-    event = get_event(session, event_id)
+    """Generate QR code for event feedback URL."""
+    event = await get_event(event_id)
     url = f"{BASE_URL}/feedback/{event.public_token}"
+    
     return {
-        "event_id": event.id,
+        "event_id": str(event.id),
         "feedback_url": url,
         "qr_base64": generate_qr_base64(url)
     }
+
 
 @router.get(
     "/{event_id}/feedback",
     response_model=list[EventFeedbackRead]
 )
-def get_event_feedback(
-    event_id: int,
-    session: SessionDep,current_speaker: Speaker = Depends(get_current_speaker)
+async def get_event_feedback(
+    event_id: str,
+    current_speaker: SpeakerDocument = Depends(get_current_speaker)
 ):
-    return list_event_feedback(session, event_id)
+    """List all feedback for an event."""
+    feedbacks = await list_event_feedback(event_id)
+    return [
+        {
+            "id": str(fb["id"]),
+            "event_id": str(fb["event_id"]),
+            "input_type": fb["input_type"],
+            "raw_text": fb.get("raw_text"),
+            "normalized_text": fb.get("normalized_text"),
+            "audio_path": fb.get("audio_path"),
+            "sentiment": fb.get("sentiment"),
+            "confidence": fb.get("confidence"),
+            "quality_decision": fb.get("quality_decision"),
+            "quality_flags": fb.get("quality_flags"),
+            "created_at": fb["created_at"]
+        }
+        for fb in feedbacks
+    ]
 
 
 @router.patch("/{event_id}", response_model=EventRead)
-def update_event_route(
-    event_id: int,
+async def update_event_route(
+    event_id: str,
     data: EventUpdate,
-    session: SessionDep,
-    current_speaker: Speaker = Depends(get_current_speaker),
+    current_speaker: SpeakerDocument = Depends(get_current_speaker),
 ):
-    return update_event(session, event_id, current_speaker.id, data)
+    """Update an event."""
+    doc = await update_event(event_id, str(current_speaker.id), data)
+    return {
+        "id": str(doc.id),
+        "speaker_id": str(doc.speaker_id),
+        "title": doc.title,
+        "description": doc.description,
+        "event_date": doc.event_date,
+        "public_token": doc.public_token,
+        "is_active": doc.is_active,
+        "feedback_open_at": doc.feedback_open_at,
+        "feedback_close_at": doc.feedback_close_at,
+        "created_at": doc.created_at
+    }
 
 
 @router.delete("/{event_id}", status_code=204)
-def delete_event_route(
-    event_id: int,
-    session: SessionDep,
-    current_speaker: Speaker = Depends(get_current_speaker),
+async def delete_event_route(
+    event_id: str,
+    current_speaker: SpeakerDocument = Depends(get_current_speaker),
 ):
-    delete_event(session, event_id, current_speaker.id)
+    """Delete an event (soft delete)."""
+    await delete_event(event_id, str(current_speaker.id))
     return None
