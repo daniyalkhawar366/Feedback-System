@@ -51,8 +51,8 @@ export default function TextFeedbackInput({ publicToken, onSuccess }: TextFeedba
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Instructions */}
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-        <p className="text-sm text-blue-900 flex items-start gap-2">
+      <div className="bg-[#fafaf8] border border-[#e8e5df] rounded-xl p-4">
+        <p className="text-sm text-[#1a1917] flex items-start gap-2">
           <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
           </svg>
@@ -64,7 +64,7 @@ export default function TextFeedbackInput({ publicToken, onSuccess }: TextFeedba
 
       {/* Text Area */}
       <div>
-        <label htmlFor="feedback-text" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="feedback-text" className="block text-sm font-medium text-[#1a1917] mb-2">
           Your Feedback
         </label>
         <textarea
@@ -78,9 +78,9 @@ export default function TextFeedbackInput({ publicToken, onSuccess }: TextFeedba
           rows={8}
           className={`w-full px-4 py-3 rounded-xl border ${
             error
-              ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-          } bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors resize-none text-base`}
+              ? 'border-[#fecaca] focus:ring-[#b91c1c] focus:border-[#b91c1c]'
+              : 'border-[#e8e5df] focus:ring-[#1a1917] focus:border-[#1a1917]'
+          } bg-white text-[#1a1917] placeholder-[#9e9a93] focus:outline-none focus:ring-2 transition-colors resize-none text-base`}
           disabled={isSubmitting}
         />
         
@@ -88,7 +88,7 @@ export default function TextFeedbackInput({ publicToken, onSuccess }: TextFeedba
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-2">
             {charCount < minChars && charCount > 0 && (
-              <span className="text-xs text-amber-600 flex items-center gap-1">
+              <span className="text-xs text-[#b45309] flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
                 {minChars - charCount} more characters needed
               </span>
@@ -96,10 +96,10 @@ export default function TextFeedbackInput({ publicToken, onSuccess }: TextFeedba
           </div>
           <span className={`text-sm font-medium ${
             charCount > maxChars
-              ? 'text-red-600'
+              ? 'text-[#b91c1c]'
               : charCount >= minChars
-              ? 'text-green-600'
-              : 'text-gray-500'
+              ? 'text-[#2d7a3a]'
+              : 'text-[#6b6760]'
           }`}>
             {charCount} / {maxChars}
           </span>
@@ -108,10 +108,10 @@ export default function TextFeedbackInput({ publicToken, onSuccess }: TextFeedba
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+        <div className="bg-[#fef2f2] border border-[#fecaca] rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-800">{error}</p>
+            <AlertCircle className="w-5 h-5 text-[#b91c1c] flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-[#991b1b]">{error}</p>
           </div>
         </div>
       )}
@@ -122,13 +122,13 @@ export default function TextFeedbackInput({ publicToken, onSuccess }: TextFeedba
         disabled={!isValid || isSubmitting}
         className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 text-base md:text-lg ${
           !isValid || isSubmitting
-            ? 'bg-gray-300 cursor-not-allowed'
-            : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98] shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-600/40'
+            ? 'bg-[#d1d0cc] text-[#6b6760] cursor-not-allowed'
+            : 'bg-[#1a1917] hover:bg-[#333] active:scale-[0.98]'
         }`}
       >
         {isSubmitting ? (
           <>
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
             <span>Submitting...</span>
           </>
         ) : (
@@ -140,7 +140,7 @@ export default function TextFeedbackInput({ publicToken, onSuccess }: TextFeedba
       </button>
 
       {/* Privacy Note */}
-      <p className="text-xs text-center text-gray-500">
+      <p className="text-xs text-center text-[#6b6760]">
         Your feedback is anonymous and will be used to improve future events.
       </p>
     </form>

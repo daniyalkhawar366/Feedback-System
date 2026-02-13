@@ -106,8 +106,8 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
   return (
     <div className="space-y-6">
       {/* Instructions */}
-      <div className="bg-pink-50 border border-pink-100 rounded-xl p-4">
-        <p className="text-sm text-pink-900 flex items-start gap-2">
+      <div className="bg-[#fafaf8] border border-[#e8e5df] rounded-xl p-4">
+        <p className="text-sm text-[#1a1917] flex items-start gap-2">
           <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
           </svg>
@@ -119,12 +119,12 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
 
       {/* Permission Denied Error */}
       {permissionDenied && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div className="bg-[#fef7ed] border border-[#f0c8a0] rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-[#b45309] flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-amber-800 mb-2">Microphone Access Required</p>
-              <p className="text-xs text-amber-700">
+              <p className="text-sm font-medium text-[#92400e] mb-2">Microphone Access Required</p>
+              <p className="text-xs text-[#78350f]">
                 Please allow microphone access in your browser settings and try again.
               </p>
             </div>
@@ -141,15 +141,18 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
               disabled={isSubmitting}
               className="group relative mb-6"
             >
-              <div className="w-32 h-32 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center shadow-2xl shadow-pink-600/40 transition-transform active:scale-95 group-hover:scale-105">
+              <div className="w-32 h-32 bg-[#1a1917] rounded-full flex items-center justify-center transition-transform active:scale-95 group-hover:scale-105 border-4 border-[#e8e5df]">
                 <Mic className="w-16 h-16 text-white" />
               </div>
-              <div className="absolute inset-0 rounded-full bg-pink-600 animate-ping opacity-20"></div>
+              <div className="absolute inset-0 rounded-full bg-[#1a1917] animate-ping opacity-10"></div>
             </button>
-            <p className="text-lg font-semibold text-gray-900 mb-2">
+            <p
+              className="text-lg font-medium text-[#1a1917] mb-2"
+              style={{ fontFamily: "'Instrument Serif', serif" }}
+            >
               Tap to Start Recording
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-[#6b6760]">
               Maximum duration: {formatDuration(maxDuration)}
             </p>
           </div>
@@ -159,17 +162,17 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
           <div className="text-center">
             {/* Recording Animation */}
             <div className="relative mb-6">
-              <div className="w-32 h-32 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-2xl shadow-red-600/40 animate-pulse">
+              <div className="w-32 h-32 bg-[#b91c1c] rounded-full flex items-center justify-center animate-pulse border-4 border-[#e8e5df]">
                 <Mic className="w-16 h-16 text-white" />
               </div>
-              <div className="absolute inset-0 rounded-full border-4 border-red-500 animate-ping"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-[#b91c1c] animate-ping opacity-30"></div>
             </div>
 
             {/* Timer */}
-            <div className="text-4xl font-bold text-gray-900 mb-2 font-mono">
+            <div className="text-4xl font-bold text-[#1a1917] mb-2 font-mono">
               {formatDuration(duration)}
             </div>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-[#6b6760] mb-6">
               Recording... ({formatDuration(maxDuration - duration)} remaining)
             </p>
 
@@ -178,7 +181,7 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
               {[...Array(20)].map((_, i) => (
                 <div
                   key={i}
-                  className="w-1 bg-red-500 rounded-full animate-pulse"
+                  className="w-1 bg-[#b91c1c] rounded-full animate-pulse"
                   style={{
                     height: `${Math.random() * 40 + 20}px`,
                     animationDelay: `${i * 0.05}s`,
@@ -190,7 +193,7 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
             {/* Stop Button */}
             <button
               onClick={stopRecording}
-              className="px-8 py-4 bg-gray-900 text-white rounded-xl font-semibold flex items-center gap-2 mx-auto hover:bg-gray-800 transition-colors shadow-lg"
+              className="px-8 py-4 bg-[#1a1917] text-white rounded-xl font-semibold flex items-center gap-2 mx-auto hover:bg-[#333] transition-colors"
             >
               <Square className="w-5 h-5" />
               Stop Recording
@@ -201,15 +204,15 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
         {!isRecording && audioBlob && (
           <div className="w-full max-w-md">
             {/* Audio Player */}
-            <div className="bg-gray-50 rounded-2xl p-6 mb-4">
+            <div className="bg-[#fafaf8] rounded-2xl border border-[#e8e5df] p-6 mb-4">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 mb-1">Recording Ready</p>
-                  <p className="text-xs text-gray-500">Duration: {formatDuration(duration)}</p>
+                  <p className="text-sm font-medium text-[#1a1917] mb-1">Recording Ready</p>
+                  <p className="text-xs text-[#6b6760]">Duration: {formatDuration(duration)}</p>
                 </div>
                 <button
                   onClick={handlePlayPause}
-                  className="w-14 h-14 bg-pink-600 hover:bg-pink-700 rounded-full flex items-center justify-center text-white transition-colors shadow-lg"
+                  className="w-14 h-14 bg-[#1a1917] hover:bg-[#333] rounded-full flex items-center justify-center text-white transition-colors"
                 >
                   {isPlaying ? <Square className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
                 </button>
@@ -221,11 +224,11 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
               )}
 
               {/* Waveform visualization (static) */}
-              <div className="flex items-center gap-0.5 h-12 bg-white rounded-lg px-2">
+              <div className="flex items-center gap-0.5 h-12 bg-white rounded-lg px-2 border border-[#e8e5df]">
                 {[...Array(50)].map((_, i) => (
                   <div
                     key={i}
-                    className="flex-1 bg-pink-500 rounded-full"
+                    className="flex-1 bg-[#1a1917] rounded-full"
                     style={{
                       height: `${Math.random() * 70 + 30}%`,
                     }}
@@ -239,7 +242,7 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
               <button
                 onClick={deleteRecording}
                 disabled={isSubmitting}
-                className="flex-1 py-4 px-6 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
+                className="flex-1 py-4 px-6 bg-[#f0ede8] hover:bg-[#e8e5df] text-[#1a1917] rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors border border-[#e8e5df]"
               >
                 <Trash2 className="w-5 h-5" />
                 Delete
@@ -249,13 +252,13 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
                 disabled={isSubmitting || duration < minDuration}
                 className={`flex-1 py-4 px-6 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
                   isSubmitting || duration < minDuration
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-pink-600 hover:bg-pink-700 text-white shadow-lg shadow-pink-600/30 active:scale-[0.98]'
+                    ? 'bg-[#d1d0cc] text-[#6b6760] cursor-not-allowed'
+                    : 'bg-[#1a1917] hover:bg-[#333] text-white active:scale-[0.98]'
                 }`}
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
                     Submitting...
                   </>
                 ) : (
@@ -268,7 +271,7 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
             </div>
 
             {duration < minDuration && (
-              <p className="text-xs text-amber-600 text-center mt-2">
+              <p className="text-xs text-[#b45309] text-center mt-2">
                 Recording too short. Minimum {minDuration} seconds required.
               </p>
             )}
@@ -278,16 +281,16 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+        <div className="bg-[#fef2f2] border border-[#fecaca] rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-800">{error}</p>
+            <AlertCircle className="w-5 h-5 text-[#b91c1c] flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-[#991b1b]">{error}</p>
           </div>
         </div>
       )}
 
       {/* Privacy Note */}
-      <p className="text-xs text-center text-gray-500">
+      <p className="text-xs text-center text-[#6b6760]">
         Your voice recording is anonymous and will be transcribed for analysis.
       </p>
     </div>

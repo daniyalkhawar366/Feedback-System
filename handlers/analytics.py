@@ -69,17 +69,24 @@ def get_event_stats(session: Session, event_id: int, speaker_id: int) -> Dict:
     confidence_scores = []
     latest_feedback_date = event.created_at
     
+    # Count non-flagged feedbacks for percentage calculations
+    valid_feedback_count = 0
+    
     for feedback, analysis in feedback_query:
-        # Count sentiments (handle pending analysis)
-        if analysis and analysis.sentiment:
-            sentiment = analysis.sentiment.lower()
-            if sentiment in sentiment_counts:
-                sentiment_counts[sentiment] += 1
-            # Collect confidence scores only if analyzed
-            if analysis.confidence:
-                confidence_scores.append(analysis.confidence)
-        else:
-            sentiment_counts["pending"] += 1
+        # Only count ACCEPTED feedbacks for sentiment distribution percentages
+        if feedback.quality_decision == "ACCEPT":
+            valid_feedback_count += 1
+            
+            # Count sentiments (handle pending analysis)
+            if analysis and analysis.sentiment:
+                sentiment = analysis.sentiment.lower()
+                if sentiment in sentiment_counts:
+                    sentiment_counts[sentiment] += 1
+                # Collect confidence scores only if analyzed
+                if analysis.confidence:
+                    confidence_scores.append(analysis.confidence)
+            else:
+                sentiment_counts["pending"] += 1
         
         # Count quality decisions
         if feedback.quality_decision in quality_counts:
@@ -93,10 +100,10 @@ def get_event_stats(session: Session, event_id: int, speaker_id: int) -> Dict:
         if feedback.created_at > latest_feedback_date:
             latest_feedback_date = feedback.created_at
     
-    # Calculate percentages
+    # Calculate percentages based on valid (non-flagged) feedback only
     sentiment_distribution = {}
     for sentiment, count in sentiment_counts.items():
-        percentage = (count / total_feedback * 100) if total_feedback > 0 else 0
+        percentage = (count / valid_feedback_count * 100) if valid_feedback_count > 0 else 0
         sentiment_distribution[sentiment] = {
             "count": count,
             "percentage": round(percentage, 2)
@@ -110,6 +117,7 @@ def get_event_stats(session: Session, event_id: int, speaker_id: int) -> Dict:
         "event_title": event.title,
         "event_date": event.event_date.isoformat() if event.event_date else None,
         "total_feedback": total_feedback,
+        "valid_feedback": valid_feedback_count,  # Non-flagged/rejected feedbacks
         "sentiment_distribution": sentiment_distribution,
         "quality_breakdown": {
             "accepted": quality_counts["ACCEPT"],

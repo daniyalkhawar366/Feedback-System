@@ -2,277 +2,424 @@
 
 import React, { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/hooks/useAuth';
 
-/**
- * LoginForm Component Props
- */
 interface LoginFormProps {
-  /** Callback when switching to register */
   onSwitchToRegister?: () => void;
-  /** Callback on successful login */
   onSuccess?: () => void;
 }
 
-/**
- * Login Form Component
- * 
- * A modern, mobile-first login form with glassmorphism effects.
- * Includes email and password fields with validation and error handling.
- * 
- * Features:
- * - Mobile-optimized with large touch targets
- * - Real-time validation
- * - Loading states
- * - Error feedback
- * - Dark mode support
- * 
- * @example
- * ```tsx
- * <LoginForm onSwitchToRegister={() => setView('register')} />
- * ```
- */
-export const LoginForm: React.FC<LoginFormProps> = ({ 
-  onSwitchToRegister, 
-  onSuccess 
+export const LoginForm: React.FC<LoginFormProps> = ({
+  onSwitchToRegister,
+  onSuccess,
 }) => {
   const router = useRouter();
   const { login, isLoading, error, clearError } = useAuth();
-  
-  // Form state
-  const [formData, setFormData] = useState({
-    identifier: '',
-    password: '',
-  });
 
-  // Field-specific errors
+  const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState<{
     identifier?: string;
     password?: string;
   }>({});
 
-  /**
-   * Handle form field changes
-   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Clear field error when user starts typing
-    if (fieldErrors[name as keyof typeof fieldErrors]) {
+    if (fieldErrors[name as keyof typeof fieldErrors])
       setFieldErrors(prev => ({ ...prev, [name]: undefined }));
-    }
-    
-    // Clear general error
-    if (error) {
-      clearError();
-    }
+    if (error) clearError();
   };
 
-  /**
-   * Validate form fields
-   */
   const validateForm = (): boolean => {
     const errors: typeof fieldErrors = {};
-
-    // Identifier validation (email or username)
-    if (!formData.identifier || !formData.identifier.trim()) {
-      errors.identifier = 'Email or username is required';
-    }
-
-    // Password validation
-    if (!formData.password) {
-      errors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
-    }
-
+    if (!formData.identifier?.trim()) errors.identifier = 'Email or username is required';
+    if (!formData.password) errors.password = 'Password is required';
+    else if (formData.password.length < 6) errors.password = 'Password must be at least 6 characters';
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  /**
-   * Handle form submission
-   */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validateForm()) return;
     try {
       const tokenResponse = await login({
         identifier: formData.identifier,
         password: formData.password,
       });
-
-      // Store token
       localStorage.setItem('token', tokenResponse.access_token);
-      
-      // Call success callback or redirect
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        router.push('/dashboard');
-      }
+      if (onSuccess) onSuccess();
+      else router.push('/dashboard');
     } catch (err) {
-      // Error is already handled by useAuth hook
       console.error('Login failed:', err);
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 sm:px-6">
-      {/* Card with Modern Light Design */}
-      <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 sm:p-8 md:p-10">
-        
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 mb-4 shadow-lg shadow-blue-500/30">
-            <svg 
-              className="w-8 h-8 sm:w-10 sm:h-10 text-white" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
-              />
-            </svg>
-          </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-2">
-            Welcome Back
+    /*
+     * Requires in layout/document:
+     * https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap
+     */
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#f6f5f2',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 16px',
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
+      {/* ── Brand mark ── */}
+      <div style={{ marginBottom: 32, textAlign: 'center' }}>
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            background: '#1a1917',
+            borderRadius: 9,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 14,
+          }}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        </div>
+        <div
+          style={{
+            fontFamily: "'Instrument Serif', serif",
+            fontSize: 26,
+            fontWeight: 400,
+            color: '#1a1917',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.1,
+          }}
+        >
+          Intelligent Feedback
+        </div>
+        <div style={{ fontSize: 12.5, color: '#9e9a93', marginTop: 4, fontWeight: 400 }}>
+          Share your voice, shape the future
+        </div>
+      </div>
+
+      {/* ── Card ── */}
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 400,
+          background: '#ffffff',
+          border: '1px solid #e8e5df',
+          borderRadius: 16,
+          padding: '32px 32px 28px',
+        }}
+      >
+        {/* Card header */}
+        <div style={{ marginBottom: 24 }}>
+          <h1
+            style={{
+              fontFamily: "'Instrument Serif', serif",
+              fontSize: 28,
+              fontWeight: 400,
+              color: '#1a1917',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.15,
+              marginBottom: 5,
+            }}
+          >
+            Welcome back
           </h1>
-          <p className="text-sm sm:text-base text-gray-500">
+          <p style={{ fontSize: 13.5, color: '#9e9a93', fontWeight: 400 }}>
             Sign in to continue to your account
           </p>
         </div>
 
-        {/* General Error Message */}
+        {/* General error */}
         {error && !error.field && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100">
-            <div className="flex items-start gap-3">
-              <svg 
-                className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" 
-                fill="currentColor" 
-                viewBox="0 0 20 20"
-              >
-                <path 
-                  fillRule="evenodd" 
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" 
-                  clipRule="evenodd" 
-                />
-              </svg>
-              <p className="text-sm text-red-700 font-medium">
-                {error.message}
-              </p>
-            </div>
+          <div
+            style={{
+              marginBottom: 20,
+              padding: '11px 14px',
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 10,
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="#b91c1c" style={{ flexShrink: 0, marginTop: 1 }}>
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <p style={{ fontSize: 12.5, color: '#991b1b', fontWeight: 500 }}>{error.message}</p>
           </div>
         )}
 
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Email or Username Field */}
-          <Input
-            label="Email or Username"
-            type="text"
-            name="identifier"
-            placeholder="you@example.com or username"
-            value={formData.identifier}
-            onChange={handleChange}
-            error={fieldErrors.identifier}
-            fullWidth
-            required
-            autoComplete="username"
-            leftIcon={
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            }
-          />
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* Password Field */}
-          <Input
-            label="Password"
-            type="password"
-            name="password"
-            placeholder="••••••••"
-            value={formData.password}
-            onChange={handleChange}
-            error={fieldErrors.password}
-            fullWidth
-            required
-            autoComplete="current-password"
-            leftIcon={
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            }
-          />
+          {/* Email / Username */}
+          <FieldGroup label="Email or Username" error={fieldErrors.identifier}>
+            <FieldInput
+              type="text"
+              name="identifier"
+              placeholder="you@example.com"
+              value={formData.identifier}
+              onChange={handleChange}
+              autoComplete="username"
+              hasError={!!fieldErrors.identifier}
+              icon={
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              }
+            />
+          </FieldGroup>
 
-          {/* Forgot Password Link */}
-          <div className="text-right">
+          {/* Password */}
+          <FieldGroup label="Password" error={fieldErrors.password}>
+            <FieldInput
+              type="password"
+              name="password"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={handleChange}
+              autoComplete="current-password"
+              hasError={!!fieldErrors.password}
+              icon={
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              }
+            />
+          </FieldGroup>
+
+          {/* Forgot password */}
+          <div style={{ textAlign: 'right', marginTop: -8 }}>
             <button
               type="button"
-              className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                fontSize: 12.5,
+                color: '#9e9a93',
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#1a1917')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#9e9a93')}
             >
               Forgot password?
             </button>
           </div>
 
-          {/* Submit Button */}
-          <Button
+          {/* Submit */}
+          <button
             type="submit"
-            variant="primary"
-            size="lg"
-            fullWidth
-            isLoading={isLoading}
+            disabled={isLoading}
+            style={{
+              marginTop: 4,
+              width: '100%',
+              padding: '11px 0',
+              background: isLoading ? '#e8e5df' : '#1a1917',
+              color: isLoading ? '#9e9a93' : '#ffffff',
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 13.5,
+              fontWeight: 500,
+              fontFamily: "'DM Sans', sans-serif",
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              transition: 'background 0.15s',
+              letterSpacing: '0.01em',
+            }}
+            onMouseEnter={e => { if (!isLoading) (e.currentTarget as HTMLButtonElement).style.background = '#333'; }}
+            onMouseLeave={e => { if (!isLoading) (e.currentTarget as HTMLButtonElement).style.background = '#1a1917'; }}
           >
-            Sign In
-          </Button>
+            {isLoading ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+                Signing in…
+              </>
+            ) : (
+              'Sign In'
+            )}
+          </button>
         </form>
 
         {/* Divider */}
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-gray-500">
-              Don&apos;t have an account?
-            </span>
-          </div>
+        <div style={{ position: 'relative', margin: '24px 0' }}>
+          <div style={{ height: 1, background: '#f0ede8' }} />
+          <span
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: '#ffffff',
+              padding: '0 12px',
+              fontSize: 11.5,
+              color: '#9e9a93',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Don&apos;t have an account?
+          </span>
         </div>
 
-        {/* Switch to Register */}
-        <Button
+        {/* Create account */}
+        <button
           type="button"
-          variant="outline"
-          size="lg"
-          fullWidth
           onClick={onSwitchToRegister}
+          style={{
+            width: '100%',
+            padding: '10px 0',
+            background: 'transparent',
+            color: '#6b6760',
+            border: '1px solid #e8e5df',
+            borderRadius: 10,
+            fontSize: 13.5,
+            fontWeight: 500,
+            fontFamily: "'DM Sans', sans-serif",
+            cursor: 'pointer',
+            transition: 'all 0.15s',
+            letterSpacing: '0.01em',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = '#1a1917';
+            (e.currentTarget as HTMLButtonElement).style.color = '#1a1917';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = '#e8e5df';
+            (e.currentTarget as HTMLButtonElement).style.color = '#6b6760';
+          }}
         >
           Create an Account
-        </Button>
+        </button>
       </div>
 
       {/* Footer */}
-      <p className="text-center text-xs sm:text-sm text-gray-500 mt-6 sm:mt-8 px-4">
+      <p style={{ marginTop: 20, fontSize: 12, color: '#9e9a93', textAlign: 'center', lineHeight: 1.6 }}>
         By signing in, you agree to our{' '}
-        <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
+        <a href="#" style={{ color: '#1a1917', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: 2 }}>
           Terms of Service
-        </a>
-        {' '}and{' '}
-        <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
+        </a>{' '}
+        and{' '}
+        <a href="#" style={{ color: '#1a1917', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: 2 }}>
           Privacy Policy
         </a>
       </p>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
+
+// ── Internal sub-components ──────────────────────────────────────────────────
+
+function FieldGroup({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label
+        style={{
+          display: 'block',
+          fontSize: 11.5,
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.07em',
+          color: '#9e9a93',
+          marginBottom: 7,
+        }}
+      >
+        {label}
+      </label>
+      {children}
+      {error && (
+        <p style={{ marginTop: 5, fontSize: 12, color: '#b91c1c', fontWeight: 400 }}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function FieldInput({
+  icon,
+  hasError,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  icon?: React.ReactNode;
+  hasError?: boolean;
+}) {
+  const [focused, setFocused] = React.useState(false);
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '0 13px',
+        background: '#fafaf8',
+        border: `1px solid ${hasError ? '#fca5a5' : focused ? '#1a1917' : '#e8e5df'}`,
+        borderRadius: 10,
+        transition: 'border-color 0.15s',
+      }}
+    >
+      {icon && (
+        <span
+          style={{
+            color: focused ? '#1a1917' : '#9e9a93',
+            flexShrink: 0,
+            transition: 'color 0.15s',
+            display: 'flex',
+          }}
+        >
+          {icon}
+        </span>
+      )}
+      <input
+        {...props}
+        onFocus={e => { setFocused(true); props.onFocus?.(e); }}
+        onBlur={e => { setFocused(false); props.onBlur?.(e); }}
+        style={{
+          flex: 1,
+          padding: '11px 0',
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          fontSize: 13.5,
+          color: '#1a1917',
+          fontFamily: "'DM Sans', sans-serif",
+          fontWeight: 400,
+        }}
+      />
+    </div>
+  );
+}

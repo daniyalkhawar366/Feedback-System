@@ -44,6 +44,16 @@ LEETSPEAK_MAP = {
     '0': 'o', '5': 's', '$': 's', '7': 't', '+': 't'
 }
 
+# Function words - grammatical words essential for coherent English
+FUNCTION_WORDS = {
+    "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "from",
+    "is", "are", "am", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did",
+    "will", "would", "shall", "should", "could", "can", "may", "might", "must", "ought",
+    "i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them",
+    "my", "your", "his", "her", "its", "our", "their", "mine", "yours", "theirs",
+    "what", "which", "who", "when", "where", "why", "how", "this", "that", "these", "those"
+}
+
 COMMON_ENGLISH_WORDS = {
     "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "from",
     "is", "are", "am", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did",
@@ -99,15 +109,17 @@ def detect_profanity(text: str) -> Tuple[bool, List[str]]:
     words = normalized.split()
     found_profanity = []
     
-    # Check whole words
+    # Check whole words with word boundaries to avoid false positives
     for word in words:
-        if word in PROFANITY_WORDS:
+        if word in PROFANITY_WORDS and len(word) > 3:  # Only check words >3 chars to avoid "ass" in "class"
             found_profanity.append(word)
     
-    # Check for profanity as substrings (e.g., "unfuckingbelievable")
+    # Check for profanity as substrings only for longer, unambiguous profanity
     for profanity in PROFANITY_WORDS:
-        if len(profanity) > 3:  # Only check longer words to avoid false positives
-            if profanity in normalized:
+        if len(profanity) > 4:  # Only check longer words to avoid false positives
+            # Use word boundary regex to avoid matching within normal words
+            pattern = r'\b' + re.escape(profanity) + r'\b'
+            if re.search(pattern, normalized):
                 if profanity not in found_profanity:
                     found_profanity.append(profanity)
     
@@ -177,6 +189,19 @@ def repetition_ratio(words: List[str]) -> float:
     return len(set(words)) / len(words)
 
 
+def detect_adjacent_repetition(words: List[str]) -> float:
+    """Detect adjacent repeated words (e.g., 'this this this')"""
+    if len(words) < 2:
+        return 0.0
+    
+    repetition_count = 0
+    for i in range(len(words) - 1):
+        if words[i].lower() == words[i + 1].lower():
+            repetition_count += 1
+    
+    return repetition_count / len(words)
+
+
 def filler_word_ratio(words: List[str]) -> float:
     if not words:
         return 0.0
@@ -185,29 +210,55 @@ def filler_word_ratio(words: List[str]) -> float:
     return filler_count / len(words)
 
 
+def function_word_ratio(words: List[str]) -> float:
+    """Check ratio of grammatical function words (the, a, is, etc.)
+    Coherent English typically has 25-40% function words
+    Random word salad typically lacks these"""
+    if not words:
+        return 0.0
+    
+    function_count = sum(1 for w in words if w.lower() in FUNCTION_WORDS)
+    return function_count / len(words)
+
+
 def gibberish_score(text: str) -> float:
     gibberish_patterns = {
         "blah": 0.8,
         "shaka": 0.7,
-        "lala": 0.7,
+        "lala": 0.9,
         "boom": 0.5,
-        "bla": 0.7,
-        "lalala": 0.9,
+        "bla": 0.8,
+        "lalala": 1.0,
         "yada": 0.6,
-        "blabla": 0.85,
+        "blabla": 0.9,
+        "haha": 0.6,
+        "hehe": 0.6,
+        "lol": 0.5,
+        "zzz": 0.7,
+        "aaa": 0.8,
+        "test": 0.4,
     }
     
     words = text.lower().split()
+    if not words:
+        return 0.0
+        
     gibberish_count = 0
     
+    # Check for repeated character patterns (e.g., "lalalalalala")
     for word in words:
+        # If word is just repeating 1-3 characters, very high score
+        if len(word) > 4:
+            unique_chars = len(set(word))
+            if unique_chars <= 3:
+                gibberish_count += 0.95
+                continue
+        
+        # Check against patterns
         for pattern, weight in gibberish_patterns.items():
             if pattern in word:
                 gibberish_count += weight
                 break
-    
-    if not words:
-        return 0.0
     
     return gibberish_count / len(words)
 
@@ -273,9 +324,14 @@ def validate_text_feedback(text: str) -> Dict:
         }
     
     # Check and censor profanity
-    censored_text, was_censored = censor_profanity(text)
-    if was_censored:
-        flags.append("profanity_censored")
+    has_profanity, bad_words = detect_profanity(text)
+    if has_profanity:
+        # Always flag and censor, never reject
+        censored_text, was_censored = censor_profanity(text)
+        if len(bad_words) >= 3:
+            flags.append("excessive_profanity")
+        else:
+            flags.append("profanity_detected")
         text = censored_text  # Use censored version for further processing
     
     normalized = normalize_text(text)
@@ -298,12 +354,25 @@ def validate_text_feedback(text: str) -> Dict:
     if rep_ratio < 0.4:
         flags.append("high_repetition")
     
+    # Check for adjacent word repetition (e.g., "this this this")
+    adjacent_rep = detect_adjacent_repetition(words)
+    if adjacent_rep > 0.03:  # Even 1 repetition in 30+ words
+        flags.append("adjacent_word_repetition")
+    
     filler_ratio = filler_word_ratio(words)
     if filler_ratio > 0.4:
         flags.append("excessive_filler_words")
     
+    # Check function word ratio - coherent English needs grammatical glue words
+    func_ratio = function_word_ratio(words)
+    if word_count > 10 and func_ratio < 0.15:  # Less than 15% function words in longer text
+        flags.append("low_coherence")
+    
     gibberish = gibberish_score(normalized)
-    if gibberish > 0.15:
+    if gibberish > 0.5:
+        # Very high gibberish - FLAG instead of REJECT
+        flags.append("high_gibberish_content")
+    elif gibberish > 0.15:
         flags.append("gibberish_detected")
     
     spam = detect_spam_patterns(text)
@@ -325,10 +394,12 @@ def validate_text_feedback(text: str) -> Dict:
         "metrics": {
             "english_word_ratio": round(eng_ratio, 2),
             "filler_word_ratio": round(filler_ratio, 2),
+            "function_word_ratio": round(func_ratio, 2),
             "gibberish_score": round(gibberish, 2),
             "spam_score": round(spam, 2),
             "char_entropy": round(entropy, 2),
             "repetition_ratio": round(rep_ratio, 2),
+            "adjacent_repetition": round(adjacent_rep, 2),
             "word_count": word_count
         }
     }
@@ -344,11 +415,15 @@ def get_validation_issues(validation_result: Dict) -> List[str]:
         "low_english_word_ratio": "Less than 65% valid English words detected",
         "low_entropy": "Text appears to be random characters or highly repetitive",
         "high_repetition": "Same words repeated excessively",
+        "adjacent_word_repetition": "Contains repeated adjacent words (e.g., 'this this this')",
         "excessive_filler_words": "Contains more than 40% filler words (um, uh, like, etc.)",
+        "low_coherence": "Random words with no grammatical structure (word salad)",
         "gibberish_detected": "Nonsense words or patterns detected",
+        "high_gibberish_content": "Excessive nonsense text that cannot be analyzed",
         "spam_detected": "Potential spam content (URLs, excessive symbols, etc.)",
         "excessive_capitalization": "Contains excessive capital letters",
-        "profanity_censored": "Inappropriate language was detected and censored"
+        "profanity_detected": "Inappropriate language detected and censored",
+        "excessive_profanity": "Contains multiple instances of abusive language"
     }
     
     return [

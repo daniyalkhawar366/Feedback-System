@@ -66,6 +66,7 @@ def handle_text_feedback(
     # --- Validate text input ---
     validation_result = validate_text_feedback(text)
     
+    # Only reject if text is too short or too long
     if validation_result["decision"] == "REJECT":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -73,11 +74,14 @@ def handle_text_feedback(
         )
 
     # --- Store feedback ---
+    # Use clean_text (censored version) for storage
     feedback = Feedback(
         event_id=event.id,
         input_type="text",
         raw_text=text,
-        normalized_text=validation_result["clean_text"]
+        normalized_text=validation_result["clean_text"],
+        quality_decision=validation_result["decision"],  # "ACCEPT" or "FLAG"
+        quality_flags=json.dumps(validation_result["flags"]) if validation_result["flags"] else None
     )
 
     session.add(feedback)
@@ -124,13 +128,14 @@ def handle_audio_feedback(
     # Step 2: Validate transcribed text (same as text feedback)
     validation_result = validate_text_feedback(raw_text)
     
+    # Only reject if text is too short or too long
     if validation_result["decision"] == "REJECT":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=validation_result.get("reason", "Text validation failed")
         )
 
-    # Step 3: Store feedback
+    # Step 3: Store feedback with censored text
     feedback = Feedback(
         event_id=event.id,
         input_type="audio",
@@ -138,7 +143,9 @@ def handle_audio_feedback(
         normalized_text=validation_result["clean_text"],
         audio_path=audio_path,
         audio_duration_sec=transcription_result.get("audio_duration"),
-        language=transcription_result.get("language")
+        language=transcription_result.get("language"),
+        quality_decision=validation_result["decision"],  # "ACCEPT" or "FLAG"
+        quality_flags=json.dumps(validation_result["flags"]) if validation_result["flags"] else None
     )
 
     session.add(feedback)
@@ -166,12 +173,14 @@ def list_event_feedback(session: Session, event_id: int):
             Feedback.id,
             Feedback.event_id,
             Feedback.input_type,
+            Feedback.raw_text,
             Feedback.normalized_text,
             Feedback.audio_path,
+            Feedback.quality_decision,
+            Feedback.quality_flags,
             Feedback.created_at,
             FeedbackAnalysis.sentiment,
             FeedbackAnalysis.confidence,
-            FeedbackAnalysis.intent,
         )
         .outerjoin(
             FeedbackAnalysis,
@@ -188,11 +197,13 @@ def list_event_feedback(session: Session, event_id: int):
             "id": row.id,
             "event_id": row.event_id,
             "input_type": row.input_type,
-            "text_feedback": row.normalized_text,
+            "raw_text": row.raw_text,
+            "normalized_text": row.normalized_text,
             "audio_path": f"http://localhost:8000/{row.audio_path}" if row.audio_path else None,
+            "quality_decision": row.quality_decision,
+            "quality_flags": row.quality_flags,
             "sentiment": row.sentiment,
             "confidence": row.confidence,
-            "intent": row.intent,
             "created_at": row.created_at,
         }
         for row in results

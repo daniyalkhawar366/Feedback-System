@@ -1,14 +1,33 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown, Users, Star, Loader2, FileText, Download } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { ThumbsUp, ThumbsDown, Users, Star, Loader2, FileText, RefreshCw, TrendingUp, AlertCircle, Clock } from 'lucide-react';
 import api from '@/utils/api';
 import type { EventFeedbackRead } from '@/types/api';
 
 interface SummaryTabProps {
   eventId: number;
 }
+
+// Design tokens matching dashboard
+const t = {
+  bg: '#f6f5f2',
+  surface: '#ffffff',
+  surfaceTint: '#fafaf8',
+  border: '#e8e5df',
+  borderSoft: '#f0ede8',
+  text: '#1a1917',
+  textMuted: '#9e9a93',
+  textSecondary: '#6b6760',
+  green: '#2d7a3a',
+  greenBg: '#edf7ef',
+  amber: '#b45309',
+  amberBg: '#fef7ed',
+  blue: '#1d4ed8',
+  blueBg: '#eff6ff',
+  purple: '#7c3aed',
+  purpleBg: '#f5f3ff',
+};
 
 interface Report {
   report_id: number;
@@ -47,9 +66,11 @@ export default function SummaryTab({ eventId }: SummaryTabProps) {
     try {
       setLoading(true);
       const [reportRes, feedbackRes] = await Promise.all([
-        api.get(`/api/reports/events/${eventId}/latest`),
-        api.get(`/events/${eventId}/feedback`),
+        api.get(`/api/reports/events/${eventId}/latest`).catch(() => ({ data: null })),
+        api.get(`/events/${eventId}/feedback`).catch(() => ({ data: [] })),
       ]);
+      console.log('Report data:', reportRes.data);
+      console.log('Feedbacks data:', feedbackRes.data);
       setReport(reportRes.data);
       setFeedbacks(feedbackRes.data || []);
     } catch (error) {
@@ -62,10 +83,12 @@ export default function SummaryTab({ eventId }: SummaryTabProps) {
   const handleGenerateReport = async () => {
     try {
       setGenerating(true);
-      await api.post(`/api/reports/events/${eventId}/generate`);
+      const response = await api.post(`/api/reports/events/${eventId}/generate`);
+      console.log('Report generation response:', response.data);
       await fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to generate report:', error);
+      alert(error.response?.data?.detail || 'Failed to generate report. Please try again.');
     } finally {
       setGenerating(false);
     }
@@ -75,9 +98,9 @@ export default function SummaryTab({ eventId }: SummaryTabProps) {
     if (report?.analytics?.sentiment_distribution) {
       const { positive, negative, neutral } = report.analytics.sentiment_distribution;
       return [
-        { name: 'Positive', value: positive.count, color: '#22C55E', percentage: positive.percentage },
-        { name: 'Negative', value: negative.count, color: '#EF4444', percentage: negative.percentage },
-        { name: 'Neutral', value: neutral.count, color: '#94A3B8', percentage: neutral.percentage },
+        { name: 'Positive', value: positive.count, color: t.green, percentage: positive.percentage },
+        { name: 'Negative', value: negative.count, color: t.amber, percentage: negative.percentage },
+        { name: 'Neutral', value: neutral.count, color: t.textMuted, percentage: neutral.percentage },
       ].filter(item => item.value > 0);
     }
     return [];
@@ -87,10 +110,18 @@ export default function SummaryTab({ eventId }: SummaryTabProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading summary...</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
+        <div style={{ textAlign: 'center' }}>
+          <Loader2 
+            style={{ 
+              width: 40, 
+              height: 40, 
+              color: t.textSecondary, 
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 16px'
+            }} 
+          />
+          <p style={{ fontSize: 13, color: t.textMuted, fontWeight: 400 }}>Loading summary...</p>
         </div>
       </div>
     );
@@ -98,24 +129,80 @@ export default function SummaryTab({ eventId }: SummaryTabProps) {
 
   if (!report) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <FileText className="w-10 h-10 text-purple-600" />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 24px' }}>
+        <div style={{ textAlign: 'center', maxWidth: 480 }}>
+          <div
+            style={{
+              width: 72,
+              height: 72,
+              background: t.surfaceTint,
+              border: `1px solid ${t.border}`,
+              borderRadius: 16,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+            }}
+          >
+            <FileText style={{ width: 32, height: 32, color: t.textSecondary }} />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">No AI Report Yet</h3>
-          <p className="text-gray-600 mb-8">
+          <h3
+            style={{
+              fontFamily: "'Instrument Serif', serif",
+              fontSize: 28,
+              fontWeight: 400,
+              color: t.text,
+              letterSpacing: '-0.01em',
+              marginBottom: 10,
+            }}
+          >
+            No AI Report Yet
+          </h3>
+          <p style={{ fontSize: 13.5, color: t.textMuted, marginBottom: 28, lineHeight: 1.6 }}>
             Generate an AI-powered summary to analyze {feedbacks.length} feedback responses
           </p>
           <button
             onClick={handleGenerateReport}
             disabled={generating || feedbacks.length === 0}
-            className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              padding: '11px 22px',
+              background: generating || feedbacks.length === 0 ? t.borderSoft : t.text,
+              color: t.surface,
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: generating || feedbacks.length === 0 ? 'not-allowed' : 'pointer',
+              transition: 'all 0.15s',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+            onMouseEnter={e => {
+              if (!generating && feedbacks.length > 0) {
+                (e.currentTarget as HTMLButtonElement).style.background = '#333';
+              }
+            }}
+            onMouseLeave={e => {
+              if (!generating && feedbacks.length > 0) {
+                (e.currentTarget as HTMLButtonElement).style.background = t.text;
+              }
+            }}
           >
-            {generating ? 'Generating...' : 'Generate AI Report'}
+            {generating ? (
+              <>
+                <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+                Generating Report...
+              </>
+            ) : (
+              <>
+                <FileText style={{ width: 14, height: 14 }} />
+                Generate AI Report
+              </>
+            )}
           </button>
           {feedbacks.length === 0 && (
-            <p className="text-sm text-gray-500 mt-4">
+            <p style={{ fontSize: 12, color: t.textMuted, marginTop: 16 }}>
               Waiting for feedback responses...
             </p>
           )}
@@ -125,145 +212,488 @@ export default function SummaryTab({ eventId }: SummaryTabProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Actions */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Executive Summary</h2>
-            <p className="text-blue-100">
-              Analysis of {feedbacks.length} feedback responses
-            </p>
-          </div>
-          
-          <button
-            onClick={handleGenerateReport}
-            disabled={generating}
-            className="px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center gap-2"
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Header with Regenerate Button */}
+      <div
+        style={{
+          background: t.surface,
+          border: `1px solid ${t.border}`,
+          borderRadius: 14,
+          padding: '20px 22px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 16,
+        }}
+      >
+        <div>
+          <h2
+            style={{
+              fontFamily: "'Instrument Serif', serif",
+              fontSize: 30,
+              fontWeight: 500,
+              color: t.text,
+              letterSpacing: '-0.02em',
+              marginBottom: 4,
+            }}
           >
-            <Loader2 className={`w-5 h-5 ${generating ? 'animate-spin' : ''}`} />
-            Regenerate
-          </button>
+            Executive Summary
+          </h2>
+          <p style={{ fontSize: 13.5, color: t.textSecondary, fontWeight: 500 }}>
+            Analysis of {feedbacks.length} feedback responses
+          </p>
         </div>
+
+        <button
+          onClick={handleGenerateReport}
+          disabled={generating}
+          style={{
+            padding: '9px 16px',
+            background: generating ? t.borderSoft : 'transparent',
+            color: t.textSecondary,
+            border: `1px solid ${t.border}`,
+            borderRadius: 9,
+            fontSize: 12.5,
+            fontWeight: 500,
+            cursor: generating ? 'not-allowed' : 'pointer',
+            transition: 'all 0.15s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+          }}
+          onMouseEnter={e => {
+            if (!generating) {
+              (e.currentTarget as HTMLButtonElement).style.background = t.text;
+              (e.currentTarget as HTMLButtonElement).style.color = t.surface;
+              (e.currentTarget as HTMLButtonElement).style.borderColor = t.text;
+            }
+          }}
+          onMouseLeave={e => {
+            if (!generating) {
+              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+              (e.currentTarget as HTMLButtonElement).style.color = t.textSecondary;
+              (e.currentTarget as HTMLButtonElement).style.borderColor = t.border;
+            }
+          }}
+        >
+          <RefreshCw
+            style={{
+              width: 13,
+              height: 13,
+              animation: generating ? 'spin 1s linear infinite' : 'none',
+            }}
+          />
+          {generating ? 'Regenerating...' : 'Regenerate'}
+        </button>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-5">
-          <ThumbsUp className="w-8 h-8 text-green-600 mb-3" />
-          <div className="text-3xl font-bold text-green-700 mb-1">{report?.highlights?.length || 0}</div>
-          <div className="text-sm text-green-700 font-medium">Strengths</div>
+      {/* Key Metrics Grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gap: 16,
+        }}
+      >
+        {/* Strengths */}
+        <div
+          style={{
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: 14,
+            padding: '20px 18px',
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              background: t.greenBg,
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 14,
+            }}
+          >
+            <ThumbsUp style={{ width: 18, height: 18, color: t.green }} />
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 600, color: t.text, marginBottom: 2 }}>
+            {report?.highlights?.length || 0}
+          </div>
+          <div style={{ fontSize: 12, color: t.textMuted, fontWeight: 500 }}>Strengths</div>
         </div>
-        
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-xl p-5">
-          <ThumbsDown className="w-8 h-8 text-orange-600 mb-3" />
-          <div className="text-3xl font-bold text-orange-700 mb-1">{report?.concerns?.length || 0}</div>
-          <div className="text-sm text-orange-700 font-medium">To Improve</div>
+
+        {/* Areas to Improve */}
+        <div
+          style={{
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: 14,
+            padding: '20px 18px',
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              background: t.amberBg,
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 14,
+            }}
+          >
+            <ThumbsDown style={{ width: 18, height: 18, color: t.amber }} />
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 600, color: t.text, marginBottom: 2 }}>
+            {report?.concerns?.length || 0}
+          </div>
+          <div style={{ fontSize: 12, color: t.textMuted, fontWeight: 500 }}>To Improve</div>
         </div>
-        
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-5">
-          <Users className="w-8 h-8 text-blue-600 mb-3" />
-          <div className="text-3xl font-bold text-blue-700 mb-1">{feedbacks.length}</div>
-          <div className="text-sm text-blue-700 font-medium">Responses</div>
+
+        {/* Total Responses */}
+        <div
+          style={{
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: 14,
+            padding: '20px 18px',
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              background: t.blueBg,
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 14,
+            }}
+          >
+            <Users style={{ width: 18, height: 18, color: t.blue }} />
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 600, color: t.text, marginBottom: 2 }}>
+            {feedbacks.length}
+          </div>
+          <div style={{ fontSize: 12, color: t.textMuted, fontWeight: 500 }}>Responses</div>
         </div>
-        
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-5">
-          <Star className="w-8 h-8 text-purple-600 mb-3" />
-          <div className="text-3xl font-bold text-purple-700 mb-1">
+
+        {/* Satisfaction Score */}
+        <div
+          style={{
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: 14,
+            padding: '20px 18px',
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              background: t.purpleBg,
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 14,
+            }}
+          >
+            <Star style={{ width: 18, height: 18, color: t.purple }} />
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 600, color: t.text, marginBottom: 2 }}>
             {Math.round(report?.analytics?.satisfaction_score || 0)}%
           </div>
-          <div className="text-sm text-purple-700 font-medium">Satisfaction</div>
+          <div style={{ fontSize: 12, color: t.textMuted, fontWeight: 500 }}>Satisfaction</div>
         </div>
       </div>
 
       {/* Main Summary */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-8">
-        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <FileText className="w-6 h-6 text-blue-600" />
+      <div
+        style={{
+          background: t.surface,
+          border: `1px solid ${t.border}`,
+          borderRadius: 14,
+          padding: 24,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            paddingBottom: 18,
+            marginBottom: 18,
+            background: '#fafafa',
+            margin: '-24px -24px 18px -24px',
+            padding: '18px 24px',
+            borderRadius: '14px 14px 0 0',
+            borderLeft: `4px solid ${t.text}`,
+          }}
+        >
+          <div
+            style={{
+              width: 38,
+              height: 38,
+              background: t.text,
+              border: `1px solid ${t.text}`,
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <FileText style={{ width: 18, height: 18, color: t.surface }} />
           </div>
-          <h3 className="text-xl font-bold text-gray-900">
+          <h3
+            style={{
+              fontFamily: "'Instrument Serif', serif",
+              fontSize: 24,
+              fontWeight: 600,
+              color: t.text,
+              letterSpacing: '-0.015em',
+            }}
+          >
             Overall Summary
           </h3>
         </div>
-        <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6">
-          <p className="text-gray-800 leading-relaxed text-lg">
-            {report?.summary?.main_summary || 'No summary available'}
+        <div
+          style={{
+            background: t.surfaceTint,
+            border: `1px solid ${t.borderSoft}`,
+            borderRadius: 12,
+            padding: 20,
+          }}
+        >
+          <p
+            style={{
+              fontSize: 14,
+              color: t.text,
+              lineHeight: 1.7,
+              letterSpacing: '0.01em',
+            }}
+          >
+            {report?.summary?.main_summary || report?.report?.executive_summary || 'No summary available'}
           </p>
         </div>
       </div>
 
-      {/* Sentiment Distribution */}
-      {sentimentData.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-6">
-            Sentiment Distribution
-          </h3>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={sentimentData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {sentimentData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+      {/* Key Insights */}
+      {report?.highlights && report.highlights.length > 0 && (
+        <div
+          style={{
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: 14,
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              paddingBottom: 18,
+              marginBottom: 18,
+              background: '#fafafa',
+              margin: '-24px -24px 18px -24px',
+              padding: '18px 24px',
+              borderRadius: '14px 14px 0 0',
+              borderLeft: `4px solid ${t.green}`,
+            }}
+          >
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                background: t.green,
+                border: `1px solid ${t.green}`,
+                borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <TrendingUp style={{ width: 18, height: 18, color: t.surface }} />
             </div>
-            
-            <div className="flex flex-col justify-center space-y-4">
-              {sentimentData.map((item) => (
-                <div key={item.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="font-medium text-gray-900">{item.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-gray-900">{item.value}</div>
-                    <div className="text-sm text-gray-600">{item.percentage.toFixed(1)}%</div>
-                  </div>
-                </div>
-              ))}
+            <h3
+              style={{
+                fontFamily: "'Instrument Serif', serif",
+                fontSize: 24,
+                fontWeight: 600,
+                color: t.text,
+                letterSpacing: '-0.015em',
+              }}
+            >
+              Key Strengths
+            </h3>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {report.highlights.map((highlight: string, idx: number) => (
+              <div
+                key={idx}
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  padding: '14px 16px',
+                  background: t.surfaceTint,
+                  border: `1px solid ${t.borderSoft}`,
+                  borderRadius: 10,
+                }}
+              >
+                <div
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: '50%',
+                    background: t.green,
+                    marginTop: 7,
+                    flexShrink: 0,
+                  }}
+                />
+                <p style={{ fontSize: 13.5, color: t.text, lineHeight: 1.6 }}>
+                  {highlight}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Areas to Improve */}
+      {report?.concerns && report.concerns.length > 0 && (
+        <div
+          style={{
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: 14,
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              paddingBottom: 18,
+              marginBottom: 18,
+              background: '#fafafa',
+              margin: '-24px -24px 18px -24px',
+              padding: '18px 24px',
+              borderRadius: '14px 14px 0 0',
+              borderLeft: `4px solid ${t.amber}`,
+            }}
+          >
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                background: t.amber,
+                border: `1px solid ${t.amber}`,
+                borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <AlertCircle style={{ width: 18, height: 18, color: t.surface }} />
             </div>
+            <h3
+              style={{
+                fontFamily: "'Instrument Serif', serif",
+                fontSize: 24,
+                fontWeight: 600,
+                color: t.text,
+                letterSpacing: '-0.015em',
+              }}
+            >
+              Areas for Improvement
+            </h3>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {report.concerns.map((concern: string, idx: number) => (
+              <div
+                key={idx}
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  padding: '14px 16px',
+                  background: t.surfaceTint,
+                  border: `1px solid ${t.borderSoft}`,
+                  borderRadius: 10,
+                }}
+              >
+                <div
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: '50%',
+                    background: t.amber,
+                    marginTop: 7,
+                    flexShrink: 0,
+                  }}
+                />
+                <p style={{ fontSize: 13.5, color: t.text, lineHeight: 1.6 }}>
+                  {concern}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
       {/* Report Metadata */}
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-        <div className="flex items-center justify-center gap-8 flex-wrap text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600">Generated:</span>
-            <span className="font-semibold text-gray-900">
+      <div
+        style={{
+          background: t.surfaceTint,
+          border: `1px solid ${t.borderSoft}`,
+          borderRadius: 14,
+          padding: '18px 22px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 28,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Clock style={{ width: 14, height: 14, color: t.textSecondary }} />
+          <div>
+            <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 2, fontWeight: 500 }}>
+              GENERATED
+            </div>
+            <div style={{ fontSize: 12.5, color: t.text, fontWeight: 500 }}>
               {report.generated_at ? new Date(report.generated_at).toLocaleDateString('en-US', { 
                 month: 'long', 
                 day: 'numeric', 
                 year: 'numeric' 
               }) : 'Just now'}
-            </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600">Processing time:</span>
-            <span className="font-semibold text-gray-900">
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Clock style={{ width: 14, height: 14, color: t.textSecondary }} />
+          <div>
+            <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 2, fontWeight: 500 }}>
+              PROCESSING TIME
+            </div>
+            <div style={{ fontSize: 12.5, color: t.text, fontWeight: 500 }}>
               {typeof report.generation_time === 'number' ? report.generation_time.toFixed(1) : report.generation_time}s
-            </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600">Based on:</span>
-            <span className="font-semibold text-gray-900">
-              {report.feedback_count} responses
-            </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Users style={{ width: 14, height: 14, color: t.textSecondary }} />
+          <div>
+            <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 2, fontWeight: 500 }}>
+              RESPONSES
+            </div>
+            <div style={{ fontSize: 12.5, color: t.text, fontWeight: 500 }}>
+              {report.feedback_count || feedbacks.length} responses
+            </div>
           </div>
         </div>
       </div>

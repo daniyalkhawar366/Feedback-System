@@ -28,6 +28,7 @@ class EventStats(BaseModel):
     event_title: str
     event_date: Optional[str] = None
     total_feedback: int
+    valid_feedback: int
     sentiment_distribution: SentimentDistribution
     quality_breakdown: QualityBreakdown
     input_type_breakdown: InputTypeBreakdown

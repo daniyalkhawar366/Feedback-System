@@ -17,7 +17,8 @@ class EventFeedbackRead(BaseModel):
     id: int
     event_id: int
     input_type: str
-    text_feedback: Optional[str] = None
+    raw_text: Optional[str] = None
+    normalized_text: Optional[str] = None
     audio_path: Optional[str] = None
     sentiment: Optional[str] = None
     confidence: Optional[float] = None

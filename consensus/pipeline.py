@@ -53,19 +53,24 @@ async def run_feedback_analysis_pipeline(
     print(f"🚀 Starting feedback analysis pipeline for: {event_name}")
     
     # ============================================================
-    # STEP 1: FETCH FEEDBACKS
+    # STEP 1: FETCH FEEDBACKS (EXCLUDE FLAGGED)
     # ============================================================
     print(f"📋 Fetching feedbacks for event {event_id}...")
     
+    # Only include ACCEPTED feedbacks in report generation
+    # Flagged feedbacks are shown in UI but excluded from analysis
     feedbacks = session.exec(
-        select(Feedback).where(Feedback.event_id == event_id)
+        select(Feedback).where(
+            Feedback.event_id == event_id,
+            Feedback.quality_decision == "ACCEPT"
+        )
     ).all()
     
     if not feedbacks:
-        print("⚠️ No feedbacks found for this event")
+        print("⚠️ No accepted feedbacks found for this event")
         return {}, {}
     
-    print(f"✅ Found {len(feedbacks)} feedbacks")
+    print(f"✅ Found {len(feedbacks)} accepted feedbacks for analysis")
     
     # Prepare feedback data for classification
     feedback_data = [

@@ -1,7 +1,7 @@
 from fastapi import APIRouter,Depends, HTTPException
-from handlers.event import create_event,get_event,get_event_by_token,list_events_for_speaker
+from handlers.event import create_event,get_event,get_event_by_token,list_events_for_speaker,update_event,delete_event
 from db.db import SessionDep
-from models.event import EventCreate,EventRead
+from models.event import EventCreate,EventRead,EventUpdate
 from helpers.qr_service import generate_qr_base64
 from dotenv import load_dotenv
 import os 
@@ -62,3 +62,22 @@ def get_event_feedback(
 ):
     return list_event_feedback(session, event_id)
 
+
+@router.patch("/{event_id}", response_model=EventRead)
+def update_event_route(
+    event_id: int,
+    data: EventUpdate,
+    session: SessionDep,
+    current_speaker: Speaker = Depends(get_current_speaker),
+):
+    return update_event(session, event_id, current_speaker.id, data)
+
+
+@router.delete("/{event_id}", status_code=204)
+def delete_event_route(
+    event_id: int,
+    session: SessionDep,
+    current_speaker: Speaker = Depends(get_current_speaker),
+):
+    delete_event(session, event_id, current_speaker.id)
+    return None

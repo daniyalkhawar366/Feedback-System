@@ -52,10 +52,10 @@ export default function PublicFeedbackPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#f6f5f2] flex items-center justify-center p-4">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading event...</p>
+          <Loader2 className="w-12 h-12 text-[#1a1917] animate-spin mx-auto mb-4" style={{ animation: 'spin 1s linear infinite' }} />
+          <p className="text-[#6b6760] font-medium">Loading event...</p>
         </div>
       </div>
     );
@@ -63,18 +63,23 @@ export default function PublicFeedbackPage() {
 
   if (error || !eventInfo) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-gray-100 p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-[#f6f5f2] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl border border-[#e8e5df] p-8 text-center">
+          <div className="w-16 h-16 bg-[#fef2f2] border border-[#fecaca] rounded-xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-[#b91c1c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Event Not Found</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h2
+            className="text-2xl font-medium text-[#1a1917] mb-2"
+            style={{ fontFamily: "'Instrument Serif', serif", letterSpacing: '-0.01em' }}
+          >
+            Event Not Found
+          </h2>
+          <p className="text-[#6b6760] mb-6">{error}</p>
           <button
             onClick={fetchEventInfo}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors"
+            className="px-6 py-3 bg-[#1a1917] hover:bg-[#333] text-white rounded-xl font-medium transition-colors"
           >
             Try Again
           </button>
@@ -84,15 +89,18 @@ export default function PublicFeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-[#f6f5f2]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 backdrop-blur-lg bg-white/90">
+      <div className="bg-white border-b border-[#e8e5df] sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+          <h1
+            className="text-3xl md:text-4xl font-medium text-[#1a1917] mb-2"
+            style={{ fontFamily: "'Instrument Serif', serif", letterSpacing: '-0.02em' }}
+          >
             {eventInfo.title}
           </h1>
           {eventInfo.description && (
-            <p className="text-gray-600 text-sm md:text-base">
+            <p className="text-[#6b6760] text-sm md:text-base font-medium">
               {eventInfo.description}
             </p>
           )}
@@ -102,13 +110,13 @@ export default function PublicFeedbackPage() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Mode Toggle */}
-        <div className="flex gap-3 mb-8 p-2 bg-white rounded-2xl border border-gray-200 shadow-sm">
+        <div className="flex gap-3 mb-8 p-2 bg-white rounded-xl border border-[#e8e5df]">
           <button
             onClick={() => setMode('text')}
-            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-lg font-medium transition-all ${
               mode === 'text'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-[#1a1917] text-white'
+                : 'text-[#6b6760] hover:bg-[#fafaf8]'
             }`}
           >
             <MessageSquare className="w-5 h-5" />
@@ -116,10 +124,10 @@ export default function PublicFeedbackPage() {
           </button>
           <button
             onClick={() => setMode('voice')}
-            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-lg font-medium transition-all ${
               mode === 'voice'
-                ? 'bg-pink-600 text-white shadow-lg shadow-pink-600/30'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-[#1a1917] text-white'
+                : 'text-[#6b6760] hover:bg-[#fafaf8]'
             }`}
           >
             <Mic className="w-5 h-5" />
@@ -128,7 +136,7 @@ export default function PublicFeedbackPage() {
         </div>
 
         {/* Input Component */}
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-6 md:p-8">
+        <div className="bg-white rounded-2xl border border-[#e8e5df] p-6 md:p-8">
           {mode === 'text' ? (
             <TextFeedbackInput
               publicToken={public_token}

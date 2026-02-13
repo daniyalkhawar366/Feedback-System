@@ -168,11 +168,35 @@ def generate_report_with_fallback(event_name: str, analytics: Dict) -> Dict:
         # Use default model from env (Groq)
         return generate_event_report(event_name, analytics)
     except Exception as e:
+        import traceback
         print(f"❌ Report generation failed: {e}")
-        # Return minimal fallback report
+        print(f"❌ Full traceback:")
+        traceback.print_exc()
+        
+        # Generate a basic report from analytics without LLM
+        print(f"⚠️  Using fallback report generation...")
+        
+        # Extract top strengths and issues
+        top_strengths = analytics.get("top_strengths", {})
+        top_issues = analytics.get("top_issues", {})
+        
+        # Build strengths list
+        strengths_list = []
+        for aspect, count in sorted(top_strengths.items(), key=lambda x: x[1], reverse=True)[:3]:
+            strengths_list.append(f"{aspect.replace('_', ' ').title()} ({count} mentions)")
+        
+        # Build improvements list  
+        improvements_list = []
+        for aspect, count in sorted(top_issues.items(), key=lambda x: x[1], reverse=True)[:3]:
+            improvements_list.append(f"{aspect.replace('_', ' ').title()} needs attention ({count} mentions)")
+        
+        satisfaction = analytics.get("satisfaction_score", 0)
+        total = analytics.get("total_responses", 0)
+        positive = analytics.get("positive_count", 0)
+        
         return {
-            "executive_summary": f"Analysis of {analytics['total_responses']} feedback responses.",
-            "strengths": "Data available in analytics dashboard.",
-            "improvements": "Data available in analytics dashboard.",
-            "recommendations": "Review detailed analytics for insights."
+            "executive_summary": f"Analysis of {total} feedback responses. Overall satisfaction: {satisfaction}% ({positive}/{total} positive). {'The event was well-received.' if satisfaction >= 70 else 'There are areas that need improvement.'}",
+            "strengths": "\n".join(strengths_list) if strengths_list else "Check detailed analytics for strengths.",
+            "improvements": "\n".join(improvements_list) if improvements_list else "Check detailed analytics for areas to improve.",
+            "recommendations": "Review the detailed analytics dashboard for specific insights and trends."
         }

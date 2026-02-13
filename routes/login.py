@@ -24,7 +24,9 @@ def login(
 
     token = create_access_token(subject=speaker.id)
 
-    return {
-        "access_token": token,
-        "token_type": "bearer"
-    }
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        speaker_id=speaker.id,
+        speaker_name=speaker.name
+    )

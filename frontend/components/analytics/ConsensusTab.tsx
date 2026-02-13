@@ -6,13 +6,14 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import api from '@/utils/api';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import type { ConsensusReport, ConsensusReportHistory, EventFeedbackRead } from '@/types/api';
+import type { ConsensusReport, ConsensusReportHistory, EventFeedbackRead, EventRead } from '@/types/api';
 
 interface ConsensusTabProps {
   eventId: number;
+  event: EventRead | null;
 }
 
-export default function ConsensusTab({ eventId }: ConsensusTabProps) {
+export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
   const [report, setReport] = useState<ConsensusReport | null>(null);
   const [feedbacks, setFeedbacks] = useState<EventFeedbackRead[]>([]);
   const [loading, setLoading] = useState(true);

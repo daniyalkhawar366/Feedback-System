@@ -55,10 +55,10 @@ export default function AnalyticsPage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="min-h-screen bg-[#f6f5f2] flex items-center justify-center">
           <div className="text-center">
-            <Loader2 className="w-12 h-12 text-blue-600 dark:text-blue-400 animate-spin mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-300">Loading analytics...</p>
+            <Loader2 className="w-12 h-12 text-[#1a1917] mx-auto mb-4" style={{ animation: 'spin 1s linear infinite' }} />
+            <p className="text-[#6b6760] font-medium">Loading analytics...</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -67,23 +67,26 @@ export default function AnalyticsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen bg-[#f6f5f2]">
         {/* Header */}
-        <header className="bg-white/90 border-b border-gray-200 sticky top-0 z-10 backdrop-blur-lg">
+        <header className="bg-white border-b border-[#e8e5df] sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                  className="p-2 hover:bg-[#fafaf8] rounded-xl transition-colors"
                 >
-                  <ArrowLeft className="w-6 h-6 text-gray-600" />
+                  <ArrowLeft className="w-6 h-6 text-[#1a1917]" />
                 </button>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">
+                  <h1
+                    className="text-xl font-medium text-[#1a1917]"
+                    style={{ fontFamily: "'Instrument Serif', serif", letterSpacing: '-0.01em' }}
+                  >
                     {event?.title || 'Event Analytics'}
                   </h1>
-                  <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <div className="flex items-center gap-3 text-sm text-[#6b6760]">
                     {event?.event_date && (
                       <span>
                         {new Date(event.event_date).toLocaleDateString()}
@@ -91,7 +94,7 @@ export default function AnalyticsPage() {
                     )}
                     {event?.feedback_open_at && event?.feedback_close_at && (
                       <>
-                        <span className="text-gray-400">•</span>
+                        <span className="text-[#9e9a93]">•</span>
                         <span className="flex items-center gap-1">
                           Feedback: {new Date(event.feedback_open_at).toLocaleString('en-US', { 
                             month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
@@ -138,7 +141,7 @@ export default function AnalyticsPage() {
         </header>
 
         {/* Tab Navigation */}
-        <div className="bg-white border-b border-gray-200">
+        <div className="bg-white border-b border-[#e8e5df]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex overflow-x-auto scrollbar-hide">
               {tabs.map((tab) => {
@@ -149,8 +152,8 @@ export default function AnalyticsPage() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 whitespace-nowrap ${
                       activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                        ? 'border-[#1a1917] text-[#1a1917]'
+                        : 'border-transparent text-[#6b6760] hover:text-[#1a1917]'
                     }`}
                   >
                     <Icon className="w-5 h-5" />

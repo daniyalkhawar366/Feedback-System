@@ -47,6 +47,9 @@ class Feedback(SQLModel, table=True):
     audio_duration_sec: Optional[float] = None
     language: Optional[str] = None
 
+    quality_decision: Optional[str] = None  # accepted | flagged | rejected
+    quality_flags: Optional[str] = None  # JSON string with quality issues
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 

@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from db.db import SessionDep,engine,create_db_and_tables
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,8 +13,11 @@ from routes.login import router as login_router
 from routes.analytics import router as analytics_router
 from routes.reports import router as reports_router
 
+# Load environment variables from .env file
+load_dotenv()
+
 # Validate required environment variables
-required_env_vars = ["DATABASE_URL", "SECRET_KEY"]
+required_env_vars = ["DATABASE_URL", "SECRET_KEY", "GROQ_API_KEY"]
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise RuntimeError(

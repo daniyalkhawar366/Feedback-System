@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 async def generate_event_report(
     event_id: int,
     session: SessionDep,
-    min_feedback: int = 3,
+    min_feedback: int = 1,
     model: str = None,
     current_speaker: Speaker = Depends(get_current_speaker)
 ):
@@ -38,7 +38,7 @@ async def generate_event_report(
     
     Args:
         event_id: ID of the event to analyze
-        min_feedback: Minimum number of feedbacks required (default: 3)
+        min_feedback: Minimum number of feedbacks required (default: 1)
         model: LLM model for classification (default: from env GROQ_MODEL)
     
     Returns:

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 from datetime import datetime, date
 from typing import Optional
 
@@ -9,13 +9,27 @@ class EventCreate(BaseModel):
     feedback_open_at: Optional[datetime] = None
     feedback_close_at: Optional[datetime] = None
     
-    @field_validator('feedback_close_at')
-    @classmethod
-    def validate_feedback_window(cls, v, info):
-        if v and info.data.get('feedback_open_at'):
-            if v <= info.data['feedback_open_at']:
+    @model_validator(mode='after')
+    def validate_feedback_window(self):
+        if self.feedback_close_at and self.feedback_open_at:
+            if self.feedback_close_at <= self.feedback_open_at:
                 raise ValueError('feedback_close_at must be after feedback_open_at')
-        return v
+        return self
+
+
+class EventUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    event_date: Optional[date] = None
+    feedback_open_at: Optional[datetime] = None
+    feedback_close_at: Optional[datetime] = None
+    
+    @model_validator(mode='after')
+    def validate_feedback_window(self):
+        if self.feedback_close_at and self.feedback_open_at:
+            if self.feedback_close_at <= self.feedback_open_at:
+                raise ValueError('feedback_close_at must be after feedback_open_at')
+        return self
 
 
 class EventRead(BaseModel):

@@ -47,7 +47,8 @@ export interface EventFeedbackRead {
   id: number;
   event_id: number;
   input_type: string;
-  text_feedback: string | null;
+  raw_text: string;
+  normalized_text: string | null;
   audio_path: string | null;
   sentiment: string | null;
   confidence: number | null;
@@ -89,6 +90,7 @@ export interface EventStats {
   event_title: string;
   event_date: string | null;
   total_feedback: number;
+  valid_feedback: number;
   sentiment_distribution: SentimentDistribution;
   quality_breakdown: QualityBreakdown;
   input_type_breakdown: InputTypeBreakdown;
