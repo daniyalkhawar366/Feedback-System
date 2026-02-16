@@ -41,21 +41,21 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#f5f5f5]">
+      <div className="min-h-screen" style={{ backgroundColor: '#F9FAFB' }}>
         {/* Header */}
-        <header className="bg-white border-b border-gray-200">
+        <header className="bg-white/80 backdrop-blur-md border-b border-blue-100 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6">
             <div className="flex items-center justify-between">
               {/* Logo & User Info */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
                   <ClipboardList className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-[13px] font-semibold text-gray-900 tracking-[0.01em] leading-tight">
+                  <h1 className="text-[15px] font-semibold text-gray-900 tracking-[0.01em] leading-tight">
                     Dashboard
                   </h1>
-                  <p className="text-[11px] text-gray-500 font-normal">
+                  <p className="text-[13px] text-gray-600 font-normal">
                     Welcome back, {speaker?.name}
                   </p>
                 </div>
@@ -64,7 +64,7 @@ export default function DashboardPage() {
               {/* Sign out Button */}
               <button
                 onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-[14px] text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg font-medium transition-all"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sign out</span>
@@ -78,10 +78,10 @@ export default function DashboardPage() {
           {/* Header Section */}
           <div className="mb-10">
             <div>
-              <h2 className="text-[38px] leading-[1.1] tracking-[-0.02em] font-normal mb-1" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              <h2 className="text-[44px] leading-[1.1] tracking-[-0.03em] font-bold mb-2 text-gray-900">
                 Your Events
               </h2>
-              <p className="text-[13.5px] text-gray-500 font-normal">
+              <p className="text-[16px] text-gray-600 font-medium">
                 Manage events and collect audience feedback
               </p>
             </div>
@@ -102,19 +102,19 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : events.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                <ClipboardList className="w-10 h-10 text-gray-400" />
+            <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-12 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <ClipboardList className="w-10 h-10 text-blue-500" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-2">
                 No Events Yet
               </h3>
-              <p className="text-gray-500 mb-6 max-w-md mx-auto">
+              <p className="text-gray-600 mb-6 max-w-md mx-auto text-[15px]">
                 Create your first event to start collecting feedback from attendees
               </p>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-black hover:bg-gray-800 text-white rounded-lg font-medium transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"
               >
                 <Plus className="w-5 h-5" />
                 Create Your First Event
@@ -133,12 +133,30 @@ export default function DashboardPage() {
               {/* New Event Placeholder */}
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="bg-transparent rounded-xl border-[1.5px] border-dashed border-gray-300 hover:border-gray-900 hover:bg-white transition-all flex flex-col items-center justify-center min-h-[400px] group"
+                className="transition-all flex flex-col items-center justify-center min-h-[400px] group"
+                style={{
+                  background: 'transparent',
+                  border: '2px dashed #CBD5E1',
+                  borderRadius: '12px',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = '#EEF2FF';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = '#6366F1';
+                  (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-4px)';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = '#CBD5E1';
+                  (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
+                }}
               >
-                <div className="w-9 h-9 rounded-[10px] border-[1.5px] border-gray-400 group-hover:bg-gray-900 group-hover:border-gray-900 flex items-center justify-center mb-2.5 transition-all text-gray-400 group-hover:text-white">
-                  <Plus className="w-4 h-4" strokeWidth={2.5} />
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-all" style={{ background: '#EEF2FF', color: '#6366F1' }}>
+                  <Plus className="w-5 h-5" strokeWidth={2.5} />
                 </div>
-                <span className="text-[13px] text-gray-400 group-hover:text-gray-900 font-medium">New event</span>
+                <span className="text-[15px] font-semibold" style={{ color: '#6366F1', fontWeight: 600 }}>New event</span>
               </button>
             </div>
           )}

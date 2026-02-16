@@ -79,39 +79,42 @@ export default function QRCodeModal({ isOpen, onClose, event }: QRCodeModalProps
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8 animate-in zoom-in duration-300">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8 animate-in zoom-in duration-300 border border-gray-200">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#111827' }}>
             QR Code
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+            className="p-2 rounded-xl transition-colors"
+            style={{ color: '#9CA3AF' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#6B7280'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
           >
-            <X className="w-6 h-6 text-gray-600" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
           </div>
         ) : qrData ? (
           <div className="space-y-6">
             {/* Event Info */}
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#111827', marginBottom: '4px' }}>
                 {event.title}
               </h3>
-              <p className="text-sm text-gray-600">
+              <p style={{ fontSize: '14px', color: '#6B7280' }}>
                 Scan to submit feedback
               </p>
             </div>
 
             {/* QR Code */}
             <div className="flex justify-center" ref={qrRef}>
-              <div className="bg-white p-6 rounded-2xl shadow-xl">
+              <div style={{ background: '#F9FAFB', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)' }}>
                 <QRCodeSVG
                   value={qrData.feedback_url}
                   size={256}
@@ -122,29 +125,35 @@ export default function QRCodeModal({ isOpen, onClose, event }: QRCodeModalProps
             </div>
 
             {/* Feedback URL */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-2">Feedback URL</p>
+            <div style={{ background: '#F9FAFB', borderRadius: '12px', padding: '16px', border: '1px solid #E5E7EB' }}>
+              <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Feedback URL</p>
               <div className="flex items-center gap-2">
-                <code className="flex-1 text-sm font-mono text-gray-900 truncate">
+                <code style={{ flex: 1, fontSize: '13px', fontFamily: 'monospace', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {qrData.feedback_url}
                 </code>
                 <button
                   onClick={handleCopyUrl}
-                  className="p-2 hover:bg-gray-200 rounded-lg transition-colors flex-shrink-0"
+                  className="p-2 rounded-lg transition-colors flex-shrink-0"
+                  style={{ background: copiedUrl ? '#D1FAE5' : '#F3F4F6' }}
+                  onMouseEnter={(e) => !copiedUrl && (e.currentTarget.style.background = '#E5E7EB')}
+                  onMouseLeave={(e) => !copiedUrl && (e.currentTarget.style.background = '#F3F4F6')}
                   title="Copy URL"
                 >
                   {copiedUrl ? (
-                    <Check className="w-4 h-4 text-green-600" />
+                    <Check className="w-4 h-4" style={{ color: '#059669' }} />
                   ) : (
-                    <Copy className="w-4 h-4 text-gray-600" />
+                    <Copy className="w-4 h-4" style={{ color: '#6B7280' }} />
                   )}
                 </button>
                 <button
                   onClick={handleOpenUrl}
-                  className="p-2 hover:bg-gray-200 rounded-lg transition-colors flex-shrink-0"
+                  className="p-2 rounded-lg transition-colors flex-shrink-0"
+                  style={{ background: '#F3F4F6' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#E5E7EB'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#F3F4F6'}
                   title="Open URL"
                 >
-                  <ExternalLink className="w-4 h-4 text-gray-600" />
+                  <ExternalLink className="w-4 h-4" style={{ color: '#6B7280' }} />
                 </button>
               </div>
             </div>
@@ -153,7 +162,10 @@ export default function QRCodeModal({ isOpen, onClose, event }: QRCodeModalProps
             <div className="flex gap-3">
               <button
                 onClick={handleCopyUrl}
-                className="flex-1 py-3 px-4 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-3 px-4 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                style={{ background: copiedUrl ? '#D1FAE5' : '#F3F4F6', color: copiedUrl ? '#059669' : '#111827' }}
+                onMouseEnter={(e) => !copiedUrl && (e.currentTarget.style.background = '#E5E7EB')}
+                onMouseLeave={(e) => !copiedUrl && (e.currentTarget.style.background = '#F3F4F6')}
               >
                 {copiedUrl ? (
                   <>
@@ -169,7 +181,10 @@ export default function QRCodeModal({ isOpen, onClose, event }: QRCodeModalProps
               </button>
               <button
                 onClick={handleDownloadQR}
-                className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-md"
+                className="flex-1 py-3 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-md"
+                style={{ background: '#6366F1', color: '#FFFFFF' }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#4F46E5'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#6366F1'}
               >
                 <Download className="w-5 h-5" />
                 Download QR
@@ -177,8 +192,8 @@ export default function QRCodeModal({ isOpen, onClose, event }: QRCodeModalProps
             </div>
 
             {/* Instructions */}
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-              <p className="text-sm text-blue-900">
+            <div style={{ background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: '12px', padding: '16px' }}>
+              <p style={{ fontSize: '14px', color: '#4338CA', lineHeight: 1.6 }}>
                 <strong>How to use:</strong> Download and display this QR code at your event. 
                 Attendees can scan it to submit feedback instantly!
               </p>

@@ -63,27 +63,27 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     <div
       style={{
         minHeight: '100vh',
-        background: '#f6f5f2',
+        background: '#F9FAFB',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '40px 16px',
-        fontFamily: "'DM Sans', sans-serif",
       }}
     >
       {/* ── Brand mark ── */}
       <div style={{ marginBottom: 32, textAlign: 'center' }}>
         <div
           style={{
-            width: 36,
-            height: 36,
-            background: '#1a1917',
-            borderRadius: 9,
+            width: 40,
+            height: 40,
+            background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+            borderRadius: 10,
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: 14,
+            marginBottom: 16,
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
           }}
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -95,17 +95,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </div>
         <div
           style={{
-            fontFamily: "'Instrument Serif', serif",
-            fontSize: 26,
-            fontWeight: 400,
-            color: '#1a1917',
-            letterSpacing: '-0.02em',
+            fontSize: 28,
+            fontWeight: 700,
+            color: '#111827',
+            letterSpacing: '-0.03em',
             lineHeight: 1.1,
           }}
         >
           Intelligent Feedback
         </div>
-        <div style={{ fontSize: 12.5, color: '#9e9a93', marginTop: 4, fontWeight: 400 }}>
+        <div style={{ fontSize: 15, color: '#6B7280', marginTop: 6, fontWeight: 400 }}>
           Share your voice, shape the future
         </div>
       </div>
@@ -114,29 +113,29 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <div
         style={{
           width: '100%',
-          maxWidth: 400,
-          background: '#ffffff',
-          border: '1px solid #e8e5df',
+          maxWidth: 440,
+          background: '#FFFFFF',
+          border: '1px solid #E5E7EB',
           borderRadius: 16,
-          padding: '32px 32px 28px',
+          padding: '40px 32px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
         }}
       >
         {/* Card header */}
         <div style={{ marginBottom: 24 }}>
           <h1
             style={{
-              fontFamily: "'Instrument Serif', serif",
-              fontSize: 28,
-              fontWeight: 400,
-              color: '#1a1917',
-              letterSpacing: '-0.02em',
+              fontSize: 24,
+              fontWeight: 700,
+              color: '#111827',
+              letterSpacing: '-0.03em',
               lineHeight: 1.15,
-              marginBottom: 5,
+              marginBottom: 8,
             }}
           >
             Welcome back
           </h1>
-          <p style={{ fontSize: 13.5, color: '#9e9a93', fontWeight: 400 }}>
+          <p style={{ fontSize: 15, color: '#6B7280', fontWeight: 400 }}>
             Sign in to continue to your account
           </p>
         </div>
@@ -146,19 +145,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           <div
             style={{
               marginBottom: 20,
-              padding: '11px 14px',
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
+              padding: '12px 16px',
+              background: '#fee2e2',
+              border: '1px solid #fca5a5',
               borderRadius: 10,
               display: 'flex',
               alignItems: 'flex-start',
               gap: 10,
             }}
           >
-            <svg width="15" height="15" viewBox="0 0 20 20" fill="#b91c1c" style={{ flexShrink: 0, marginTop: 1 }}>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="#dc2626" style={{ flexShrink: 0, marginTop: 1 }}>
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
-            <p style={{ fontSize: 12.5, color: '#991b1b', fontWeight: 500 }}>{error.message}</p>
+            <p style={{ fontSize: 14, color: '#991b1b', fontWeight: 500 }}>{error.message}</p>
           </div>
         )}
 
@@ -211,15 +210,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 background: 'none',
                 border: 'none',
                 padding: 0,
-                fontSize: 12.5,
-                color: '#9e9a93',
-                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 14,
+                color: '#6366F1',
                 fontWeight: 500,
                 cursor: 'pointer',
                 transition: 'color 0.15s',
+                textDecoration: 'none',
               }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#1a1917')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#9e9a93')}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.color = '#4F46E5';
+                (e.currentTarget as HTMLButtonElement).style.textDecoration = 'underline';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.color = '#6366F1';
+                (e.currentTarget as HTMLButtonElement).style.textDecoration = 'none';
+              }}
             >
               Forgot password?
             </button>
@@ -232,24 +237,39 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             style={{
               marginTop: 4,
               width: '100%',
-              padding: '11px 0',
-              background: isLoading ? '#e8e5df' : '#1a1917',
-              color: isLoading ? '#9e9a93' : '#ffffff',
+              padding: '12px 24px',
+              background: isLoading ? '#9CA3AF' : '#6366F1',
+              color: '#FFFFFF',
               border: 'none',
-              borderRadius: 10,
-              fontSize: 13.5,
-              fontWeight: 500,
-              fontFamily: "'DM Sans', sans-serif",
+              borderRadius: 8,
+              fontSize: 15,
+              fontWeight: 600,
               cursor: isLoading ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
-              transition: 'background 0.15s',
-              letterSpacing: '0.01em',
+              transition: 'all 0.2s ease',
+              boxShadow: isLoading ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.05)',
             }}
-            onMouseEnter={e => { if (!isLoading) (e.currentTarget as HTMLButtonElement).style.background = '#333'; }}
-            onMouseLeave={e => { if (!isLoading) (e.currentTarget as HTMLButtonElement).style.background = '#1a1917'; }}
+            onMouseEnter={e => {
+              if (!isLoading) {
+                (e.currentTarget as HTMLButtonElement).style.background = '#4F46E5';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+              }
+            }}
+            onMouseLeave={e => {
+              if (!isLoading) {
+                (e.currentTarget as HTMLButtonElement).style.background = '#6366F1';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+              }
+            }}
+            onMouseDown={e => {
+              if (!isLoading) (e.currentTarget as HTMLButtonElement).style.background = '#4338CA';
+            }}
+            onMouseUp={e => {
+              if (!isLoading) (e.currentTarget as HTMLButtonElement).style.background = '#4F46E5';
+            }}
           >
             {isLoading ? (
               <>
@@ -266,18 +286,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
         {/* Divider */}
         <div style={{ position: 'relative', margin: '24px 0' }}>
-          <div style={{ height: 1, background: '#f0ede8' }} />
+          <div style={{ height: 1, background: '#E5E7EB' }} />
           <span
             style={{
               position: 'absolute',
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              background: '#ffffff',
+              background: '#FFFFFF',
               padding: '0 12px',
-              fontSize: 11.5,
-              color: '#9e9a93',
-              fontWeight: 500,
+              fontSize: 14,
+              color: '#9CA3AF',
+              fontWeight: 400,
               whiteSpace: 'nowrap',
             }}
           >
@@ -291,25 +311,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           onClick={onSwitchToRegister}
           style={{
             width: '100%',
-            padding: '10px 0',
-            background: 'transparent',
-            color: '#6b6760',
-            border: '1px solid #e8e5df',
-            borderRadius: 10,
-            fontSize: 13.5,
-            fontWeight: 500,
+            padding: '12px 24px',
+            background: '#FFFFFF',
+            color: '#374151',
+            border: '1px solid #D1D5DB',
+            borderRadius: 8,
+            fontSize: 15,
+            fontWeight: 600,
             fontFamily: "'DM Sans', sans-serif",
             cursor: 'pointer',
-            transition: 'all 0.15s',
-            letterSpacing: '0.01em',
+            transition: 'all 0.2s ease',
           }}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = '#1a1917';
-            (e.currentTarget as HTMLButtonElement).style.color = '#1a1917';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = '#9CA3AF';
+            (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB';
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = '#e8e5df';
-            (e.currentTarget as HTMLButtonElement).style.color = '#6b6760';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = '#D1D5DB';
+            (e.currentTarget as HTMLButtonElement).style.background = '#FFFFFF';
           }}
         >
           Create an Account
@@ -317,18 +336,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       </div>
 
       {/* Footer */}
-      <p style={{ marginTop: 20, fontSize: 12, color: '#9e9a93', textAlign: 'center', lineHeight: 1.6 }}>
+      <p style={{ marginTop: 24, fontSize: 12, color: '#9CA3AF', textAlign: 'center', lineHeight: 1.6 }}>
         By signing in, you agree to our{' '}
-        <a href="#" style={{ color: '#1a1917', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: 2 }}>
+        <a href="#" style={{ color: '#6366F1', fontWeight: 500, textDecoration: 'underline' }}>
           Terms of Service
         </a>{' '}
         and{' '}
-        <a href="#" style={{ color: '#1a1917', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: 2 }}>
+        <a href="#" style={{ color: '#6366F1', fontWeight: 500, textDecoration: 'underline' }}>
           Privacy Policy
         </a>
       </p>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        input::placeholder { color: #9CA3AF; }
+      `}</style>
     </div>
   );
 };
@@ -349,19 +371,19 @@ function FieldGroup({
       <label
         style={{
           display: 'block',
-          fontSize: 11.5,
+          fontSize: 12,
           fontWeight: 600,
           textTransform: 'uppercase',
-          letterSpacing: '0.07em',
-          color: '#9e9a93',
-          marginBottom: 7,
+          letterSpacing: '0.05em',
+          color: '#6B7280',
+          marginBottom: 8,
         }}
       >
         {label}
       </label>
       {children}
       {error && (
-        <p style={{ marginTop: 5, fontSize: 12, color: '#b91c1c', fontWeight: 400 }}>
+        <p style={{ marginTop: 5, fontSize: 12, color: '#EF4444', fontWeight: 400 }}>
           {error}
         </p>
       )}
@@ -382,23 +404,20 @@ function FieldInput({
   return (
     <div
       style={{
+        position: 'relative',
         display: 'flex',
         alignItems: 'center',
-        gap: 10,
-        padding: '0 13px',
-        background: '#fafaf8',
-        border: `1px solid ${hasError ? '#fca5a5' : focused ? '#1a1917' : '#e8e5df'}`,
-        borderRadius: 10,
-        transition: 'border-color 0.15s',
       }}
     >
       {icon && (
         <span
           style={{
-            color: focused ? '#1a1917' : '#9e9a93',
+            position: 'absolute',
+            left: 12,
+            color: '#9CA3AF',
             flexShrink: 0,
-            transition: 'color 0.15s',
             display: 'flex',
+            zIndex: 1,
           }}
         >
           {icon}
@@ -409,15 +428,21 @@ function FieldInput({
         onFocus={e => { setFocused(true); props.onFocus?.(e); }}
         onBlur={e => { setFocused(false); props.onBlur?.(e); }}
         style={{
-          flex: 1,
-          padding: '11px 0',
-          background: 'transparent',
-          border: 'none',
+          width: '100%',
+          paddingLeft: icon ? 40 : 14,
+          paddingRight: 14,
+          paddingTop: 12,
+          paddingBottom: 12,
+          background: '#FFFFFF',
+          border: hasError ? '2px solid #EF4444' : focused ? '2px solid #6366F1' : '1px solid #D1D5DB',
+          borderRadius: 8,
           outline: 'none',
-          fontSize: 13.5,
-          color: '#1a1917',
+          fontSize: 15,
+          color: '#111827',
           fontFamily: "'DM Sans', sans-serif",
           fontWeight: 400,
+          transition: 'all 0.2s ease',
+          boxShadow: focused ? '0 0 0 3px rgba(99, 102, 241, 0.1)' : 'none',
         }}
       />
     </div>

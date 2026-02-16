@@ -72,26 +72,26 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
       case 'positive':
-        return 'text-[#2d7a3a] bg-[#edf7ef] border-[#2d7a3a]';
+        return 'text-[#059669] bg-[#D1FAE5] border-[#6EE7B7]';
       case 'negative':
-        return 'text-[#b91c1c] bg-[#fef2f2] border-[#b91c1c]';
+        return 'text-[#DC2626] bg-[#FEE2E2] border-[#FCA5A5]';
       case 'neutral':
-        return 'text-[#6b6760] bg-[#fafaf8] border-[#e8e5df]';
+        return 'text-[#6B7280] bg-[#F3F4F6] border-[#D1D5DB]';
       case 'pending':
-        return 'text-[#1a1917] bg-[#fafaf8] border-[#e8e5df]';
+        return 'text-blue-600 bg-blue-50 border-blue-400';
       default:
-        return 'text-[#6b6760] bg-[#fafaf8] border-[#e8e5df]';
+        return 'text-[#6B7280] bg-[#F3F4F6] border-[#D1D5DB]';
     }
   };
 
   const getQualityIcon = (decision: string) => {
     switch (decision?.toUpperCase()) {
       case 'ACCEPT':
-        return <CheckCircle2 className="w-4 h-4 text-[#2d7a3a]" />;
+        return <CheckCircle2 className="w-4 h-4" style={{ color: '#10B981' }} />;
       case 'FLAG':
-        return <AlertTriangle className="w-4 h-4 text-[#b45309]" />;
+        return <AlertTriangle className="w-4 h-4" style={{ color: '#F59E0B' }} />;
       case 'REJECT':
-        return <XCircle className="w-4 h-4 text-[#b91c1c]" />;
+        return <XCircle className="w-4 h-4 text-red-600" />;
       default:
         return null;
     }
@@ -114,12 +114,12 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-[#e8e5df] p-6 space-y-4">
+      <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4" style={{ backgroundColor: '#F9FAFB' }}>
         <div className="flex items-center gap-2 mb-2">
-          <Filter className="w-5 h-5 text-[#1a1917]" />
+          <Filter className="w-5 h-5 text-gray-900" />
           <h3
-            className="text-lg font-medium text-[#1a1917]"
-            style={{ fontFamily: "'Instrument Serif', serif", letterSpacing: '-0.01em' }}
+            className="text-lg font-bold text-gray-900"
+            style={{ letterSpacing: '-0.02em' }}
           >
             Filters
           </h3>
@@ -127,13 +127,29 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9e9a93]" />
+          <Search className="w-5 h-5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search feedback text..."
-            className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#e8e5df] bg-white text-[#1a1917] placeholder-[#9e9a93] focus:outline-none focus:ring-2 focus:ring-[#1a1917]"
+            className="w-full rounded-xl bg-white"
+            style={{
+              paddingLeft: '40px',
+              paddingRight: '16px',
+              paddingTop: '12px',
+              paddingBottom: '12px',
+              border: '1px solid #E5E7EB',
+              color: '#111827',
+              fontSize: '15px',
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.outline = 'none';
+              e.currentTarget.style.border = '1px solid #6366F1';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.border = '1px solid #E5E7EB';
+            }}
           />
         </div>
 
@@ -141,7 +157,7 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Sentiment Filter */}
           <div>
-            <label className="block text-sm font-medium text-[#1a1917] mb-2">
+            <label className="block text-sm font-medium text-gray-900 mb-2">
               Sentiment
             </label>
             <div className="flex flex-wrap gap-2">
@@ -149,11 +165,26 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
                 <button
                   key={filter}
                   onClick={() => setSentimentFilter(filter)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    sentimentFilter === filter
-                      ? 'bg-[#1a1917] text-white'
-                      : 'bg-[#fafaf8] text-[#1a1917] hover:bg-[#f0ede8] border border-[#e8e5df]'
-                  }`}
+                  className="transition-all"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    backgroundColor: sentimentFilter === filter ? '#6366F1' : '#FFFFFF',
+                    color: sentimentFilter === filter ? '#FFFFFF' : '#6B7280',
+                    border: sentimentFilter === filter ? 'none' : '1px solid #E5E7EB',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (sentimentFilter !== filter) {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (sentimentFilter !== filter) {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FFFFFF';
+                    }
+                  }}
                 >
                   {filter.charAt(0).toUpperCase() + filter.slice(1)}
                 </button>
@@ -163,7 +194,7 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
 
           {/* Quality Filter */}
           <div>
-            <label className="block text-sm font-medium text-[#1a1917] mb-2">
+            <label className="block text-sm font-medium text-gray-900 mb-2">
               Quality
             </label>
             <div className="flex flex-wrap gap-2">
@@ -171,11 +202,26 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
                 <button
                   key={filter}
                   onClick={() => setQualityFilter(filter)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    qualityFilter === filter
-                      ? 'bg-[#1a1917] text-white'
-                      : 'bg-[#fafaf8] text-[#1a1917] hover:bg-[#f0ede8] border border-[#e8e5df]'
-                  }`}
+                  className="transition-all"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    backgroundColor: qualityFilter === filter ? '#6366F1' : '#FFFFFF',
+                    color: qualityFilter === filter ? '#FFFFFF' : '#6B7280',
+                    border: qualityFilter === filter ? 'none' : '1px solid #E5E7EB',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (qualityFilter !== filter) {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (qualityFilter !== filter) {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FFFFFF';
+                    }
+                  }}
                 >
                   {filter === 'all' ? 'All' : filter === 'ACCEPT' ? 'Accepted' : filter === 'FLAG' ? 'Flagged' : 'Rejected'}
                 </button>
@@ -185,7 +231,7 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
 
           {/* Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-[#1a1917] mb-2">
+            <label className="block text-sm font-medium text-gray-900 mb-2">
               Type
             </label>
             <div className="flex flex-wrap gap-2">
@@ -193,11 +239,26 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
                 <button
                   key={filter}
                   onClick={() => setTypeFilter(filter)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    typeFilter === filter
-                      ? 'bg-[#1a1917] text-white'
-                      : 'bg-[#fafaf8] text-[#1a1917] hover:bg-[#f0ede8] border border-[#e8e5df]'
-                  }`}
+                  className="transition-all"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    backgroundColor: typeFilter === filter ? '#6366F1' : '#FFFFFF',
+                    color: typeFilter === filter ? '#FFFFFF' : '#6B7280',
+                    border: typeFilter === filter ? 'none' : '1px solid #E5E7EB',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (typeFilter !== filter) {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (typeFilter !== filter) {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FFFFFF';
+                    }
+                  }}
                 >
                   {filter.charAt(0).toUpperCase() + filter.slice(1)}
                 </button>
@@ -207,28 +268,28 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
         </div>
 
         {/* Results Count */}
-        <div className="pt-4 border-t border-[#e8e5df]">
-          <p className="text-sm text-[#6b6760]">
-            Showing <span className="font-semibold text-[#1a1917]">{filteredFeedbacks.length}</span> of{' '}
-            <span className="font-semibold text-[#1a1917]">{feedbacks.length}</span> feedbacks
+        <div className="pt-4 border-t border-gray-200">
+          <p className="text-sm text-gray-600">
+            Showing <span className="font-semibold text-gray-900">{filteredFeedbacks.length}</span> of{' '}
+            <span className="font-semibold text-gray-900">{feedbacks.length}</span> feedbacks
           </p>
         </div>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-[#1a1917]" style={{ animation: 'spin 1s linear infinite' }} />
+          <Loader2 className="w-8 h-8 text-indigo-600" style={{ animation: 'spin 1s linear infinite' }} />
         </div>
       ) : filteredFeedbacks.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-[#e8e5df] p-12 text-center">
-          <MessageSquare className="w-16 h-16 text-[#9e9a93] mx-auto mb-4" />
+        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+          <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <p
-            className="text-lg font-medium text-[#1a1917] mb-2"
-            style={{ fontFamily: "'Instrument Serif', serif", letterSpacing: '-0.01em' }}
+            className="text-lg font-bold text-gray-900 mb-2"
+            style={{ letterSpacing: '-0.02em' }}
           >
             {feedbacks.length === 0 ? 'No Feedback Yet' : 'No feedbacks match your filters'}
           </p>
-          <p className="text-[#6b6760]">
+          <p className="text-gray-600">
             {feedbacks.length === 0 ? 'No feedback has been submitted for this event yet.' : 'Try adjusting your search or filter criteria.'}
           </p>
         </div>
@@ -237,23 +298,34 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
           {filteredFeedbacks.map((feedback) => (
             <div
               key={feedback.id}
-              className="bg-white rounded-xl border border-[#e8e5df] overflow-hidden hover:border-[#1a1917] transition-all"
+              className="bg-white overflow-hidden transition-all"
+              style={{
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+              }}
             >
               {/* Header */}
               <div
-                className="p-4 cursor-pointer hover:bg-[#fafaf8] transition-colors"
+                className="cursor-pointer hover:bg-gray-50 transition-colors"
+                style={{ padding: '16px' }}
                 onClick={() => toggleExpanded(feedback.id)}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-3">
                       {feedback.input_type === 'text' ? (
-                        <MessageSquare className="w-5 h-5 text-[#1a1917] shrink-0" />
+                        <MessageSquare className="w-5 h-5 text-gray-900 shrink-0" />
                       ) : (
-                        <Mic className="w-5 h-5 text-[#1a1917] shrink-0" />
+                        <Mic className="w-5 h-5 text-gray-900 shrink-0" />
                       )}
                     </div>
-                    <p className="text-base text-[#1a1917] leading-relaxed mb-3">
+                    <p className="leading-relaxed mb-3" style={{ fontSize: '15px', color: '#111827', lineHeight: 1.6, fontWeight: 400 }}>
                       {(() => {
                         // Show censored text for flagged feedbacks, otherwise raw text
                         const displayText = feedback.quality_decision === 'FLAG' && feedback.normalized_text
@@ -266,27 +338,33 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
                       {/* Hide sentiment for flagged feedbacks */}
                       {feedback.quality_decision !== 'FLAG' && (
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium border ${getSentimentColor(
+                          style={{
+                            padding: '4px 12px',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                          }}
+                          className={`inline-flex items-center border ${getSentimentColor(
                             feedback.sentiment || 'pending'
                           )}`}
                         >
                           {feedback.sentiment ? feedback.sentiment.charAt(0).toUpperCase() + feedback.sentiment.slice(1) : 'Pending'}
                         </span>
                       )}
-                      <div className="flex items-center gap-1.5 text-xs text-[#6b6760]">
+                      <div className="flex items-center gap-1.5" style={{ fontSize: '13px', color: '#6B7280' }}>
                         {getQualityIcon(feedback.quality_decision || 'ACCEPT')}
                         <span className="capitalize">{feedback.quality_decision?.toLowerCase() || 'accepted'}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-[#6b6760]">
+                      <div className="flex items-center gap-1.5" style={{ fontSize: '13px', color: '#9CA3AF' }}>
                         <Calendar className="w-3.5 h-3.5" />
                         {new Date(feedback.created_at).toLocaleDateString()}
                       </div>
-                      <span className="text-xs text-[#6b6760]">
+                      <span style={{ fontSize: '13px', color: '#6B7280' }}>
                         Confidence: {((feedback.confidence || 0) * 100).toFixed(0)}%
                       </span>
                     </div>
                   </div>
-                  <button className="text-[#9e9a93] hover:text-[#1a1917] transition-colors">
+                  <button className="transition-colors" style={{ color: '#9CA3AF' }} onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.color = '#6B7280'} onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.color = '#9CA3AF'}>
                     {expandedId === feedback.id ? (
                       <ChevronUp className="w-5 h-5" />
                     ) : (
@@ -298,13 +376,13 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
 
               {/* Expanded Content */}
               {expandedId === feedback.id && (
-                <div className="p-4 border-t border-[#e8e5df] bg-[#fafaf8] space-y-4">
+                <div className="border-t space-y-4" style={{ padding: '16px', borderTopColor: '#E5E7EB', backgroundColor: '#F9FAFB' }}>
                   {/* Full Text */}
                   <div>
-                    <h4 className="text-sm font-medium text-[#1a1917] mb-2">
+                    <h4 className="mb-2" style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', marginBottom: '8px' }}>
                       Feedback Text
                     </h4>
-                    <p className="text-sm text-[#1a1917] whitespace-pre-wrap">
+                    <p className="whitespace-pre-wrap" style={{ fontSize: '15px', color: '#111827', lineHeight: 1.6 }}>
                       {/* Show censored text for flagged feedbacks */}
                       {feedback.quality_decision === 'FLAG' && feedback.normalized_text
                         ? feedback.normalized_text
@@ -315,7 +393,7 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
                   {/* Audio Player */}
                   {feedback.input_type === 'audio' && feedback.audio_path && (
                     <div>
-                      <h4 className="text-sm font-medium text-[#1a1917] mb-2">
+                      <h4 className="mb-2" style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', marginBottom: '8px' }}>
                         Audio Recording
                       </h4>
                       <audio
@@ -333,7 +411,7 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
                   {/* Quality Flags */}
                   {feedback.quality_flags && (
                     <div>
-                      <h4 className="text-sm font-medium text-[#1a1917] mb-2">
+                      <h4 className="mb-2" style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', marginBottom: '8px' }}>
                         Quality Flags
                       </h4>
                       <div className="flex flex-wrap gap-2">
@@ -345,7 +423,7 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
                             return (Array.isArray(flags) ? flags : []).map((flag, index) => (
                               <span
                                 key={index}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-[#fef7ed] text-[#92400e] border border-[#f0c8a0]"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200"
                               >
                                 <AlertTriangle className="w-3.5 h-3.5" />
                                 {flag.replace(/_/g, ' ')}
@@ -353,7 +431,7 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
                             ));
                           } catch {
                             return (
-                              <span className="text-xs text-[#6b6760]">
+                              <span className="text-xs text-gray-600">
                                 {feedback.quality_flags}
                               </span>
                             );
@@ -364,36 +442,38 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
                   )}
 
                   {/* Metadata Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+                  <div className="rounded-lg" style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px' }}>
+                    <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: '16px' }}>
                     {/* Hide sentiment for flagged feedbacks */}
                     {feedback.quality_decision !== 'FLAG' && (
                       <>
-                        <div className="bg-white rounded-lg p-3 border border-[#e8e5df]">
-                          <p className="text-xs text-[#6b6760] mb-1">Sentiment</p>
-                          <p className="text-sm font-semibold text-[#1a1917] capitalize">
+                        <div className="bg-white rounded-lg" style={{ padding: '12px', border: '1px solid #E5E7EB' }}>
+                          <p className="mb-1" style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sentiment</p>
+                          <p className="capitalize" style={{ fontSize: '14px', color: '#111827', fontWeight: 500 }}>
                             {feedback.sentiment || 'Pending'}
                           </p>
                         </div>
-                        <div className="bg-white rounded-lg p-3 border border-[#e8e5df]">
-                          <p className="text-xs text-[#6b6760] mb-1">Confidence</p>
-                          <p className="text-sm font-semibold text-[#1a1917]">
+                        <div className="bg-white rounded-lg" style={{ padding: '12px', border: '1px solid #E5E7EB' }}>
+                          <p className="mb-1" style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Confidence</p>
+                          <p style={{ fontSize: '14px', color: '#111827', fontWeight: 500 }}>
                             {feedback.confidence ? `${(feedback.confidence * 100).toFixed(1)}%` : 'Pending'}
                           </p>
                         </div>
                       </>
                     )}
-                    <div className="bg-white rounded-lg p-3 border border-[#e8e5df]">
-                      <p className="text-xs text-[#6b6760] mb-1">Quality</p>
-                      <p className="text-sm font-semibold text-[#1a1917] capitalize">
+                    <div className="bg-white rounded-lg" style={{ padding: '12px', border: '1px solid #E5E7EB' }}>
+                      <p className="mb-1" style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quality</p>
+                      <p className="capitalize" style={{ fontSize: '14px', color: '#111827', fontWeight: 500 }}>
                         {feedback.quality_decision?.toLowerCase() || 'accepted'}
                       </p>
                     </div>
-                    <div className="bg-white rounded-lg p-3 border border-[#e8e5df]">
-                      <p className="text-xs text-[#6b6760] mb-1">Type</p>
-                      <p className="text-sm font-semibold text-[#1a1917] capitalize">
+                    <div className="bg-white rounded-lg" style={{ padding: '12px', border: '1px solid #E5E7EB' }}>
+                      <p className="mb-1" style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</p>
+                      <p className="capitalize" style={{ fontSize: '14px', color: '#111827', fontWeight: 500 }}>
                         {feedback.input_type}
                       </p>
                     </div>
+                  </div>
                   </div>
                 </div>
               )}

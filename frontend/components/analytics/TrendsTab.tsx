@@ -85,10 +85,10 @@ export default function TrendsTab({ eventId }: TrendsTabProps) {
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis
                 dataKey="date"
-                stroke="#888888"
+                stroke="#6B7280"
                 tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               />
-              <YAxis stroke="#888888" />
+              <YAxis stroke="#6B7280" />
               <Tooltip
                 contentStyle={{
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -101,28 +101,28 @@ export default function TrendsTab({ eventId }: TrendsTabProps) {
               <Line
                 type="monotone"
                 dataKey="positive"
-                stroke="#4CAF50"
+                stroke="#10B981"
                 strokeWidth={2}
                 name="Positive"
-                dot={{ fill: '#4CAF50', r: 4 }}
+                dot={{ fill: '#10B981', r: 4 }}
                 activeDot={{ r: 6 }}
               />
               <Line
                 type="monotone"
                 dataKey="negative"
-                stroke="#F44336"
+                stroke="#EF4444"
                 strokeWidth={2}
                 name="Negative"
-                dot={{ fill: '#F44336', r: 4 }}
+                dot={{ fill: '#EF4444', r: 4 }}
                 activeDot={{ r: 6 }}
               />
               <Line
                 type="monotone"
                 dataKey="neutral"
-                stroke="#757575"
+                stroke="#6B7280"
                 strokeWidth={2}
                 name="Neutral"
-                dot={{ fill: '#757575', r: 4 }}
+                dot={{ fill: '#6B7280', r: 4 }}
                 activeDot={{ r: 6 }}
               />
             </LineChart>

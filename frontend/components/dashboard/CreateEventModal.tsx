@@ -93,21 +93,23 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl border border-[#e8e5df] max-w-lg w-full p-8 animate-in zoom-in duration-300">
+      <div className="bg-white rounded-2xl border border-gray-200 max-w-lg w-full p-8 animate-in zoom-in duration-300 shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2
-            className="text-2xl font-medium text-[#1a1917]"
-            style={{ fontFamily: "'Instrument Serif', serif", letterSpacing: '-0.01em' }}
+            style={{ fontSize: '24px', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}
           >
             Create New Event
           </h2>
           <button
             onClick={handleClose}
             disabled={isSubmitting}
-            className="p-2 hover:bg-[#fafaf8] rounded-xl transition-colors disabled:opacity-50"
+            className="p-2 rounded-xl transition-colors disabled:opacity-50"
+            style={{ color: '#9CA3AF' }}
+            onMouseEnter={(e) => !isSubmitting && (e.currentTarget.style.color = '#6B7280')}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
           >
-            <X className="w-6 h-6 text-[#1a1917]" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
@@ -117,9 +119,10 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
           <div>
             <label
               htmlFor="title"
-              className="block text-sm font-medium text-[#1a1917] mb-2"
+              className="block mb-2"
+              style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}
             >
-              Event Title <span className="text-[#b91c1c]">*</span>
+              Event Title <span style={{ color: '#EF4444' }}>*</span>
             </label>
             <input
               id="title"
@@ -130,17 +133,21 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
                 setErrors({ ...errors, title: undefined });
               }}
               placeholder="Annual Conference 2026"
-              className={`w-full px-4 py-3 rounded-xl border ${
-                errors.title
-                  ? 'border-[#fecaca] focus:ring-[#b91c1c]'
-                  : 'border-[#e8e5df] focus:ring-[#1a1917]'
-              } bg-white text-[#1a1917] placeholder-[#9e9a93] focus:outline-none focus:ring-2 transition-colors`}
+              className="w-full px-4 py-3 rounded-xl transition-colors"
+              style={{
+                background: '#FFFFFF',
+                border: errors.title ? '2px solid #EF4444' : '1px solid #D1D5DB',
+                color: '#111827',
+                fontSize: '15px'
+              }}
+              onFocus={(e) => !errors.title && (e.target.style.border = '2px solid #6366F1')}
+              onBlur={(e) => !errors.title && (e.target.style.border = '1px solid #D1D5DB')}
               disabled={isSubmitting}
             />
             {errors.title && (
-              <p className="text-sm text-[#991b1b] mt-1">{errors.title}</p>
+              <p className="mt-1" style={{ fontSize: '13px', color: '#EF4444' }}>{errors.title}</p>
             )}
-            <p className="text-xs text-[#6b6760] mt-1">
+            <p className="mt-1" style={{ fontSize: '12px', color: '#9CA3AF' }}>
               {formData.title.length}/100 characters
             </p>
           </div>
@@ -149,7 +156,8 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
           <div>
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-[#1a1917] mb-2"
+              className="block mb-2"
+              style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}
             >
               Description (Optional)
             </label>
@@ -162,17 +170,21 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
               }}
               placeholder="Brief description of your event..."
               rows={4}
-              className={`w-full px-4 py-3 rounded-xl border ${
-                errors.description
-                  ? 'border-[#fecaca] focus:ring-[#b91c1c]'
-                  : 'border-[#e8e5df] focus:ring-[#1a1917]'
-              } bg-white text-[#1a1917] placeholder-[#9e9a93] focus:outline-none focus:ring-2 transition-colors resize-none`}
+              className="w-full px-4 py-3 rounded-xl transition-colors resize-none"
+              style={{
+                background: '#FFFFFF',
+                border: errors.description ? '2px solid #EF4444' : '1px solid #D1D5DB',
+                color: '#111827',
+                fontSize: '15px'
+              }}
+              onFocus={(e) => !errors.description && (e.target.style.border = '2px solid #6366F1')}
+              onBlur={(e) => !errors.description && (e.target.style.border = '1px solid #D1D5DB')}
               disabled={isSubmitting}
             />
             {errors.description && (
-              <p className="text-sm text-[#991b1b] mt-1">{errors.description}</p>
+              <p className="mt-1" style={{ fontSize: '13px', color: '#EF4444' }}>{errors.description}</p>
             )}
-            <p className="text-xs text-[#6b6760] mt-1">
+            <p className="mt-1" style={{ fontSize: '12px', color: '#9CA3AF' }}>
               {formData.description?.length || 0}/500 characters
             </p>
           </div>
@@ -181,7 +193,8 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
           <div>
             <label
               htmlFor="event_date"
-              className="block text-sm font-medium text-[#1a1917] mb-2"
+              className="block mb-2"
+              style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}
             >
               Event Date (Optional)
             </label>
@@ -190,15 +203,23 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
               type="date"
               value={formData.event_date}
               onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl border border-[#e8e5df] bg-white text-[#1a1917] focus:outline-none focus:ring-2 focus:ring-[#1a1917] transition-colors"
+              className="w-full px-4 py-3 rounded-xl transition-colors"
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #D1D5DB',
+                color: '#111827',
+                fontSize: '15px'
+              }}
+              onFocus={(e) => e.target.style.border = '2px solid #6366F1'}
+              onBlur={(e) => e.target.style.border = '1px solid #D1D5DB'}
               disabled={isSubmitting}
             />
           </div>
 
           {/* Feedback Collection Period */}
-          <div className="space-y-4 p-4 bg-[#fafaf8] rounded-xl border border-[#e8e5df]">
-            <p className="text-sm font-semibold text-[#1a1917] mb-2">
-              ⏰ Feedback Collection Period (Optional)
+          <div className="space-y-4 p-4 rounded-xl" style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+            <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>
+              Feedback Collection Period (Optional)
             </p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -206,7 +227,8 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
               <div>
                 <label
                   htmlFor="feedback_open_at"
-                  className="block text-sm font-medium text-[#1a1917] mb-2"
+                  className="block mb-2"
+                  style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}
                 >
                   Opens At
                 </label>
@@ -218,7 +240,15 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
                     setFormData({ ...formData, feedback_open_at: e.target.value });
                     setErrors({ ...errors, feedback_close_at: undefined });
                   }}
-                  className="w-full px-4 py-3 rounded-xl border border-[#e8e5df] bg-white text-[#1a1917] focus:outline-none focus:ring-2 focus:ring-[#1a1917] transition-colors"
+                  className="w-full px-4 py-3 rounded-xl transition-colors"
+                  style={{
+                    background: '#FFFFFF',
+                    border: '1px solid #D1D5DB',
+                    color: '#111827',
+                    fontSize: '14px'
+                  }}
+                  onFocus={(e) => e.target.style.border = '2px solid #6366F1'}
+                  onBlur={(e) => e.target.style.border = '1px solid #D1D5DB'}
                   disabled={isSubmitting}
                 />
               </div>
@@ -227,7 +257,8 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
               <div>
                 <label
                   htmlFor="feedback_close_at"
-                  className="block text-sm font-medium text-[#1a1917] mb-2"
+                  className="block mb-2"
+                  style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}
                 >
                   Closes At
                 </label>
@@ -239,20 +270,24 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
                     setFormData({ ...formData, feedback_close_at: e.target.value });
                     setErrors({ ...errors, feedback_close_at: undefined });
                   }}
-                  className={`w-full px-4 py-3 rounded-xl border ${
-                    errors.feedback_close_at
-                      ? 'border-[#fecaca] focus:ring-[#b91c1c]'
-                      : 'border-[#e8e5df] focus:ring-[#1a1917]'
-                  } bg-white text-[#1a1917] focus:outline-none focus:ring-2 transition-colors`}
+                  className="w-full px-4 py-3 rounded-xl transition-colors"
+                  style={{
+                    background: '#FFFFFF',
+                    border: errors.feedback_close_at ? '2px solid #EF4444' : '1px solid #D1D5DB',
+                    color: '#111827',
+                    fontSize: '14px'
+                  }}
+                  onFocus={(e) => !errors.feedback_close_at && (e.target.style.border = '2px solid #6366F1')}
+                  onBlur={(e) => !errors.feedback_close_at && (e.target.style.border = '1px solid #D1D5DB')}
                   disabled={isSubmitting}
                 />
                 {errors.feedback_close_at && (
-                  <p className="text-sm text-[#991b1b] mt-1">{errors.feedback_close_at}</p>
+                  <p className="mt-1" style={{ fontSize: '13px', color: '#EF4444' }}>{errors.feedback_close_at}</p>
                 )}
               </div>
             </div>
             
-            <p className="text-xs text-[#6b6760]">
+            <p style={{ fontSize: '13px', color: '#6B7280' }}>
               Set when attendees can submit feedback. If not set, feedback will be open indefinitely.
             </p>
           </div>
@@ -263,14 +298,27 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="flex-1 py-3 px-4 bg-[#f0ede8] hover:bg-[#e8e5df] text-[#1a1917] rounded-xl font-semibold transition-colors disabled:opacity-50 border border-[#e8e5df]"
+              className="flex-1 py-3 px-4 rounded-xl font-semibold transition-colors disabled:opacity-50"
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #D1D5DB',
+                color: '#374151'
+              }}
+              onMouseEnter={(e) => !isSubmitting && (e.currentTarget.style.background = '#F9FAFB')}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !formData.title.trim()}
-              className="flex-1 py-3 px-4 bg-[#1a1917] hover:bg-[#333] text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-3 px-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+              style={{
+                background: (isSubmitting || !formData.title.trim()) ? '#9CA3AF' : '#6366F1',
+                color: '#FFFFFF'
+              }}
+              onMouseEnter={(e) => !(isSubmitting || !formData.title.trim()) && (e.currentTarget.style.background = '#4F46E5')}
+              onMouseLeave={(e) => !(isSubmitting || !formData.title.trim()) && (e.currentTarget.style.background = '#6366F1')}
             >
               {isSubmitting ? (
                 <>

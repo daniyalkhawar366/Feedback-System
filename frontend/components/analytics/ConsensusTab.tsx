@@ -60,9 +60,9 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
       setGenerating(true);
       setError(null);
       const response = await api.post<ConsensusReport>(`/api/reports/events/${eventId}/generate`);
-      console.log('📊 Report API Response:', response.data);
-      console.log('📊 highlights:', response.data.highlights);
-      console.log('📊 concerns:', response.data.concerns);
+      console.log('Report API Response:', response.data);
+      console.log('highlights:', response.data.highlights);
+      console.log('concerns:', response.data.concerns);
       setReport(response.data);
       
       // Refresh feedbacks in case they changed
@@ -73,7 +73,7 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
       
       // User-friendly rate limit message
       if (err.response?.status === 429 || errorDetail.includes('rate limit')) {
-        setError('⏱️ API rate limit reached. Please wait 10-15 seconds and try again.');
+        setError('API rate limit reached. Please wait 10-15 seconds and try again.');
       } else {
         setError(errorDetail);
       }
@@ -99,7 +99,7 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
       // Build PDF content with pure inline styles
       pdfContainer.innerHTML = `
         <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #9333ea;">
-          <h1 style="font-size: 32px; color: #111827; margin: 0 0 10px 0;">📊 Feedback Analysis Report</h1>
+          <h1 style="font-size: 32px; color: #111827; margin: 0 0 10px 0;">Feedback Analysis Report</h1>
           <p style="font-size: 18px; color: #6b7280; margin: 0;">${report.event_title || 'Event Feedback'}</p>
         </div>
         
@@ -123,13 +123,13 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
         </div>
         
         <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
-          <h3 style="font-size: 24px; color: #1e40af; margin: 0 0 15px 0;">📊 Overall Summary</h3>
+          <h3 style="font-size: 24px; color: #1e40af; margin: 0 0 15px 0;">Overall Summary</h3>
           <p style="font-size: 16px; color: #374151; line-height: 1.6; margin: 0;">${report?.summary?.main_summary || 'No summary available'}</p>
         </div>
         
         ${report?.highlights && report.highlights.length > 0 ? `
           <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
-            <h3 style="font-size: 24px; color: #166534; margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 2px solid #86efac;">✨ What Went Great</h3>
+            <h3 style="font-size: 24px; color: #166534; margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 2px solid #86efac;">What Went Great</h3>
             ${report.highlights.map((item, i) => `
               <div style="background: white; border-left: 4px solid #22c55e; border-radius: 8px; padding: 15px; margin-bottom: 12px;">
                 <div style="font-weight: bold; color: #166534; margin-bottom: 5px;">${i + 1}. Strength</div>
@@ -141,7 +141,7 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
         
         ${report?.concerns && report.concerns.length > 0 ? `
           <div style="background: #fff7ed; border: 2px solid #f97316; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
-            <h3 style="font-size: 24px; color: #9a3412; margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 2px solid #fdba74;">🎯 Action Items for Improvement</h3>
+            <h3 style="font-size: 24px; color: #9a3412; margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 2px solid #fdba74;">Action Items for Improvement</h3>
             ${report.concerns.map((item, i) => {
               const parts = item.split('→').map(s => s.trim());
               const issue = parts[0] || item;
@@ -150,8 +150,8 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
                 <div style="background: white; border-left: 4px solid #f97316; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
                   <div style="font-weight: bold; color: #9a3412; margin-bottom: 8px;">${i + 1}. ${issue}</div>
                   ${suggestion ? `
-                    <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 12px; margin-top: 8px;">
-                      <div style="font-size: 12px; font-weight: bold; color: #166534; margin-bottom: 5px;">✅ ACTION TO TAKE:</div>
+                    <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 12px; margin-top: 8px;">
+                      <div style="font-size: 12px; font-weight: bold; color: #166534; margin-bottom: 5px;">ACTION TO TAKE:</div>
                       <p style="font-size: 14px; color: #374151; margin: 0; line-height: 1.5;">${suggestion}</p>
                     </div>
                   ` : ''}
@@ -163,11 +163,11 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
         
         <div style="background: #f3f4f6; border-radius: 8px; padding: 20px; text-align: center; margin-top: 30px;">
           <div style="font-size: 14px; color: #6b7280;">
-            📅 ${report.generated_at ? new Date(report.generated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Just now'} 
+            ${report.generated_at ? new Date(report.generated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Just now'} 
             &nbsp;&nbsp;|&nbsp;&nbsp; 
-            ⏱️ Generated in ${typeof report.generation_time === 'number' ? report.generation_time.toFixed(1) : report.generation_time}s 
+            Generated in ${typeof report.generation_time === 'number' ? report.generation_time.toFixed(1) : report.generation_time}s 
             &nbsp;&nbsp;|&nbsp;&nbsp; 
-            💬 ${report.feedback_count} responses
+            ${report.feedback_count} responses
           </div>
         </div>
       `;
@@ -229,13 +229,13 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
     
     const data = [];
     if (sentimentCounts.Positive) {
-      data.push({ name: 'Positive', value: sentimentCounts.Positive, color: '#10b981' });
+      data.push({ name: 'Positive', value: sentimentCounts.Positive, color: '#10B981' });
     }
     if (sentimentCounts.Negative) {
-      data.push({ name: 'Negative', value: sentimentCounts.Negative, color: '#ef4444' });
+      data.push({ name: 'Negative', value: sentimentCounts.Negative, color: '#EF4444' });
     }
     if (sentimentCounts.Neutral) {
-      data.push({ name: 'Neutral', value: sentimentCounts.Neutral, color: '#f59e0b' });
+      data.push({ name: 'Neutral', value: sentimentCounts.Neutral, color: '#6B7280' });
     }
     
     return data.length > 0 ? data : null;
@@ -350,7 +350,7 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
         
         {/* Report Header */}
         <div className="text-center pb-6 border-b-4 border-purple-200">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">📊 Feedback Analysis Report</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Feedback Analysis Report</h1>
           <p className="text-xl text-gray-600">{report.event_title || 'Event Feedback'}</p>
         </div>
         
@@ -422,7 +422,7 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
               <FileText className="w-7 h-7 text-blue-600" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900">
-              📊 Overall Summary
+              Overall Summary
             </h3>
           </div>
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6">
@@ -440,7 +440,7 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
                 <CheckCircle2 className="w-7 h-7 text-green-600" />
               </div>
               <h3 className="text-2xl font-bold text-green-800">
-                ✨ What Went Great
+                What Went Great
               </h3>
             </div>
             <div className="space-y-4">
@@ -466,7 +466,7 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
                 <AlertCircle className="w-7 h-7 text-orange-600" />
               </div>
               <h3 className="text-2xl font-bold text-orange-800">
-                🎯 Action Items for Improvement
+                Action Items for Improvement
               </h3>
             </div>
             <div className="space-y-5">
@@ -484,12 +484,12 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
                       </div>
                       <div className="flex-1 space-y-3">
                         <div className="bg-white rounded-lg p-4 border-2 border-orange-200">
-                          <p className="text-sm text-orange-600 font-semibold mb-1">📋 ISSUE:</p>
+                          <p className="text-sm text-orange-600 font-semibold mb-1">ISSUE:</p>
                           <p className="text-gray-900 text-base leading-relaxed">{issue}</p>
                         </div>
                         {suggestion && (
                           <div className="bg-white rounded-lg p-4 border-2 border-green-200">
-                            <p className="text-sm text-green-600 font-semibold mb-1">✅ ACTION TO TAKE:</p>
+                            <p className="text-sm text-green-600 font-semibold mb-1">ACTION TO TAKE:</p>
                             <p className="text-gray-800 text-base leading-relaxed">{suggestion}</p>
                           </div>
                         )}
@@ -507,7 +507,7 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
           <div className="bg-white border-2 border-purple-300 rounded-2xl p-8">
             <h3 className="text-2xl font-bold text-purple-800 mb-6 flex items-center gap-2">
               <MessageCircle className="w-8 h-8 text-purple-600" />
-              💬 Detailed Feedback from Attendees
+              Detailed Feedback from Attendees
             </h3>
             <div className="space-y-6">
               {meaningfulReviews.map((review, index) => (
@@ -537,7 +537,7 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
           <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-300 rounded-2xl p-8">
             <h3 className="text-2xl font-bold text-indigo-800 mb-6 flex items-center gap-2">
               <TrendingUp className="w-8 h-8 text-indigo-600" />
-              📋 Recommended Next Steps
+              Recommended Next Steps
             </h3>
             <div className="grid gap-4">
               {report.next_steps.map((item, index) => (
@@ -556,7 +556,6 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border-2 border-gray-300 shadow-sm">
           <div className="flex items-center justify-center gap-8 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">📅</span>
               <span className="text-gray-700 font-medium">
                 {report.generated_at ? new Date(report.generated_at).toLocaleDateString('en-US', { 
                   month: 'long', 
@@ -566,13 +565,11 @@ export default function ConsensusTab({ eventId, event }: ConsensusTabProps) {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-2xl">⏱️</span>
               <span className="text-gray-700 font-medium">
                 Generated in {typeof report.generation_time === 'number' ? report.generation_time.toFixed(1) : report.generation_time}s
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-2xl">💬</span>
               <span className="text-gray-700 font-medium">
                 Based on {report.feedback_count} responses
               </span>

@@ -32,22 +32,26 @@ interface OverviewTabProps {
   stats: EventStats;
 }
 
-// ── Design tokens (mirror dashboard) ────────────────────────────────────────
+// ── Design tokens (modern color scheme) ────────────────────────────────────────
 const t = {
-  bg: '#f6f5f2',
+  bg: '#F9FAFB',
   surface: '#ffffff',
-  surfaceTint: '#fafaf8',
-  border: '#e8e5df',
-  borderSoft: '#f0ede8',
-  text: '#1a1917',
-  textMuted: '#9e9a93',
-  textSecondary: '#6b6760',
-  green: '#2d7a3a',
-  greenBg: '#edf7ef',
-  amber: '#b45309',
-  amberBg: '#fef7ed',
-  red: '#b91c1c',
-  redBg: '#fef2f2',
+  surfaceTint: '#f9fafb',
+  border: '#e5e7eb',
+  borderSoft: '#f3f4f6',
+  text: '#1f2937',
+  textMuted: '#9ca3af',
+  textSecondary: '#6b7280',
+  primary: '#3b82f6',
+  primaryBg: '#dbeafe',
+  green: '#10b981',
+  greenBg: '#d1fae5',
+  amber: '#f59e0b',
+  amberBg: '#fef3c7',
+  red: '#ef4444',
+  redBg: '#fee2e2',
+  indigo: '#6366f1',
+  indigoBg: '#e0e7ff',
 };
 
 // ── Shared micro-components ──────────────────────────────────────────────────
@@ -58,54 +62,57 @@ function MetricCard({
   value,
   trend,
   valueColor = t.text,
+  iconColor,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string | number;
   trend?: 'up' | 'down' | null;
   valueColor?: string;
+  iconColor?: string;
 }) {
   return (
     <div
       style={{
         background: t.surface,
         border: `1px solid ${t.border}`,
-        borderRadius: 14,
-        padding: '20px 22px',
+        borderRadius: 16,
+        padding: '24px',
         transition: 'box-shadow 0.2s, transform 0.2s',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
       }}
       onMouseEnter={e => {
-        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 24px rgba(0,0,0,0.07)';
+        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.15)';
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
       }}
       onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div
           style={{
-            width: 38,
-            height: 38,
-            background: t.surfaceTint,
-            border: `1px solid ${t.borderSoft}`,
-            borderRadius: 10,
+            width: 42,
+            height: 42,
+            background: `linear-gradient(135deg, ${t.primaryBg} 0%, ${t.indigoBg} 100%)`,
+            border: `1px solid ${t.border}`,
+            borderRadius: 12,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: t.textSecondary,
+            color: iconColor || t.primary,
           }}
         >
           {icon}
         </div>
-        {trend === 'up' && <TrendingUp size={15} color={t.green} />}
-        {trend === 'down' && <TrendingDown size={15} color={t.red} />}
+        {trend === 'up' && <TrendingUp size={18} color={t.green} strokeWidth={2.5} />}
+        {trend === 'down' && <TrendingDown size={18} color={t.red} strokeWidth={2.5} />}
       </div>
-      <div style={{ fontSize: 28, fontWeight: 600, color: valueColor, letterSpacing: '-0.02em', lineHeight: 1.1, fontFamily: "'Instrument Serif', serif" }}>
+      <div style={{ fontSize: 36, fontWeight: 700, color: valueColor, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
         {value}
       </div>
-      <div style={{ marginTop: 4, fontSize: 12.5, color: t.textMuted, fontWeight: 400 }}>{label}</div>
+      <div style={{ marginTop: 6, fontSize: 15, color: t.textSecondary, fontWeight: 600 }}>{label}</div>
     </div>
   );
 }
@@ -116,27 +123,28 @@ function SectionCard({ title, children }: { title?: string; children: React.Reac
       style={{
         background: t.surface,
         border: `1px solid ${t.border}`,
-        borderRadius: 14,
+        borderRadius: 16,
         padding: '0',
         overflow: 'hidden',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
       }}
     >
       {title && (
         <div
           style={{
-            background: '#fafafa',
-            borderLeft: `4px solid ${t.text}`,
-            padding: '16px 24px',
+            background: 'transparent',
+            borderLeft: `4px solid #6366F1`,
+            paddingLeft: 16,
+            padding: '18px 24px',
             marginBottom: 0,
           }}
         >
           <h3
             style={{
-              fontFamily: "'Instrument Serif', serif",
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: 600,
-              color: t.text,
-              letterSpacing: '-0.01em',
+              color: '#111827',
+              letterSpacing: '-0.02em',
               margin: 0,
             }}
           >
@@ -144,7 +152,7 @@ function SectionCard({ title, children }: { title?: string; children: React.Reac
           </h3>
         </div>
       )}
-      <div style={{ padding: title ? '22px 24px' : '22px 24px' }}>
+      <div style={{ padding: title ? '24px' : '24px' }}>
         {children}
       </div>
     </div>
@@ -227,11 +235,10 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
           <div style={{ textAlign: 'center', padding: '12px 0 8px' }}>
             <div
               style={{
-                fontFamily: "'Instrument Serif', serif",
-                fontSize: 52,
-                fontWeight: 400,
+                fontSize: 56,
+                fontWeight: 700,
                 color: t.text,
-                letterSpacing: '-0.03em',
+                letterSpacing: '-0.04em',
                 lineHeight: 1,
               }}
             >
@@ -267,7 +274,7 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
                   }}
                 >
                   {item.icon}
-                  <span style={{ fontSize: 22, fontWeight: 600, color: t.text, fontFamily: "'Instrument Serif', serif" }}>{item.val}</span>
+                  <span style={{ fontSize: 24, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>{item.val}</span>
                   <span style={{ fontSize: 11.5, color: t.textMuted }}>{item.label}</span>
                 </div>
               ))}
@@ -302,12 +309,11 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
 
           <div
             style={{
-              fontFamily: "'Instrument Serif', serif",
-              fontSize: 22,
-              fontWeight: 400,
+              fontSize: 24,
+              fontWeight: 700,
               color: t.text,
               marginBottom: 8,
-              letterSpacing: '-0.01em',
+              letterSpacing: '-0.02em',
             }}
           >
             Generate an AI Report
@@ -385,6 +391,7 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
           icon={<MessageSquare size={15} />}
           label="Valid Feedback (Non-Flagged)"
           value={stats.valid_feedback || 0}
+          iconColor="#6366F1"
         />
         <MetricCard
           icon={<ThumbsUp size={15} />}
@@ -392,17 +399,20 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
           value={`${positivePct.toFixed(1)}%`}
           valueColor={t.green}
           trend={positivePct > 50 ? 'up' : 'down'}
+          iconColor="#10B981"
         />
         <MetricCard
           icon={<BarChart2 size={15} />}
           label="Avg Confidence"
           value={`${((stats.avg_confidence || 0) * 100).toFixed(1)}%`}
+          iconColor="#6366F1"
         />
         <MetricCard
           icon={<Flag size={15} />}
           label="Flagged Issues"
           value={stats.quality_breakdown?.flagged || 0}
           valueColor={stats.quality_breakdown?.flagged ? t.amber : t.text}
+          iconColor="#F59E0B"
         />
       </div>
 
@@ -495,11 +505,10 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
                 </div>
                 <span
                   style={{
-                    fontFamily: "'Instrument Serif', serif",
-                    fontSize: 22,
-                    fontWeight: 400,
+                    fontSize: 24,
+                    fontWeight: 700,
                     color: t.text,
-                    letterSpacing: '-0.01em',
+                    letterSpacing: '-0.02em',
                   }}
                 >
                   {item.val}
@@ -583,11 +592,13 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
               color: t.textSecondary,
               bg: t.surfaceTint,
             },
-          ].map(s => (
+          ].map(s => {
+            const bgColor = s.label === 'Positive' ? '#D1FAE5' : s.label === 'Negative' ? '#FEE2E2' : '#F3F4F6';
+            return (
             <div
               key={s.label}
               style={{
-                background: s.bg,
+                background: bgColor,
                 border: `1px solid ${t.borderSoft}`,
                 borderRadius: 10,
                 padding: '14px 16px',
@@ -599,11 +610,10 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
                 </span>
                 <span
                   style={{
-                    fontFamily: "'Instrument Serif', serif",
-                    fontSize: 22,
-                    fontWeight: 400,
+                    fontSize: 24,
+                    fontWeight: 700,
                     color: s.color,
-                    letterSpacing: '-0.01em',
+                    letterSpacing: '-0.02em',
                   }}
                 >
                   {s.pct.toFixed(1)}%
@@ -611,7 +621,8 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
               </div>
               <p style={{ fontSize: 12, color: t.textMuted }}>{s.count} responses</p>
             </div>
-          ))}
+          );
+        })}
         </div>
       </SectionCard>
 
@@ -631,8 +642,8 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
                 border: `1px solid ${t.borderSoft}`,
                 borderRadius: 10,
                 fontSize: 13.5,
-                color: t.textSecondary,
-                lineHeight: 1.65,
+                color: '#4B5563',
+                lineHeight: 1.6,
               }}
             >
               {text}

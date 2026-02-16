@@ -50,12 +50,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // Base styles - mobile-first with large touch targets
     const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100';
 
-    // Variant styles
+    // Variant styles - Meaningful colors
     const variantStyles = {
-      primary: 'bg-gradient-to-r from-blue-500 to-cyan-400 text-white hover:from-blue-600 hover:to-cyan-500 shadow-lg shadow-blue-500/30',
-      secondary: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/30',
-      outline: 'border-2 border-blue-500 text-blue-600 hover:bg-blue-50',
-      ghost: 'text-gray-600 hover:bg-gray-50'
+      primary: 'bg-[#3b82f6] text-white hover:bg-[#2563eb] shadow-md hover:shadow-lg',
+      secondary: 'bg-[#6366f1] text-white hover:bg-[#4f46e5] shadow-md hover:shadow-lg',
+      outline: 'border-2 border-[#3b82f6] text-[#3b82f6] hover:bg-[#dbeafe] bg-white',
+      ghost: 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
     };
 
     // Size styles - optimized for mobile touch

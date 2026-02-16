@@ -21,6 +21,7 @@ from db.mongo_models import SpeakerDocument
 
 load_dotenv()
 BASE_URL = os.getenv("BASE_URL")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
@@ -97,7 +98,7 @@ async def get_event_qr(
 ):
     """Generate QR code for event feedback URL."""
     event = await get_event(event_id)
-    url = f"{BASE_URL}/feedback/{event.public_token}"
+    url = f"{FRONTEND_URL}/feedback/{event.public_token}"
     
     return {
         "event_id": str(event.id),

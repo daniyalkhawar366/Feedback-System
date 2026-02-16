@@ -95,15 +95,24 @@ export default function EventCard({ event, onUpdate }: EventCardProps) {
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col min-h-[400px]">
+      <div className="rounded-xl transition-all duration-200 flex flex-col min-h-[400px]" style={{
+        background: '#FFFFFF',
+        border: '1px solid #E5E7EB',
+        borderRadius: '12px',
+        padding: '24px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      }}
+      onMouseEnter={(e) => (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)'}
+      onMouseLeave={(e) => (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'}
+      >
         {/* Header with Title and Menu */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1 pr-4">
-            <h3 className="text-xl leading-tight tracking-[-0.01em] font-normal text-gray-900 mb-2" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            <h3 className="leading-tight mb-2" style={{ fontSize: '20px', fontWeight: 600, color: '#111827', letterSpacing: '-0.02em' }}>
               {event.title}
             </h3>
             {event.description && (
-              <p className="text-[13px] text-gray-500 line-clamp-2 leading-relaxed">
+              <p className="line-clamp-2 leading-relaxed" style={{ fontSize: '14px', color: '#6B7280' }}>
                 {event.description}
               </p>
             )}
@@ -112,8 +121,8 @@ export default function EventCard({ event, onUpdate }: EventCardProps) {
           <div className="flex items-center gap-2">
             {/* Active Badge */}
             {showActiveIndicator && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#edf7ef] text-[#2d7a3a] text-[11.5px] font-medium rounded-full whitespace-nowrap">
-                <span className="w-1.5 h-1.5 bg-[#2d7a3a] rounded-full"></span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 text-[12px] font-semibold rounded-full whitespace-nowrap shadow-sm">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                 Active
               </span>
             )}
@@ -156,43 +165,49 @@ export default function EventCard({ event, onUpdate }: EventCardProps) {
         </div>
 
         {/* Event Date */}
-        <div className="flex items-center gap-2 text-[12.5px] text-gray-600 font-normal mb-6">
-          <Calendar className="w-[13px] h-[13px] text-gray-500" />
+        <div className="flex items-center gap-2 font-medium mb-6 px-3 py-2 rounded-lg" style={{ fontSize: '14px', color: '#6B7280', backgroundColor: '#F9FAFB' }}>
+          <Calendar className="text-gray-600" style={{ width: '14px', height: '14px' }} />
           <span>{formatDate(event.event_date)}</span>
         </div>
 
         {/* Feedback Collection Section */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[11.5px] font-semibold text-gray-500 uppercase tracking-wider">
+            <p className="text-[12px] font-semibold text-gray-600 uppercase tracking-wider">
               Feedback Collection
             </p>
-            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[11.5px] font-medium rounded-full ${
-              status.color === 'green' ? 'bg-[#edf7ef] text-[#2d7a3a]' :
-              status.color === 'blue' ? 'bg-blue-100 text-blue-700' :
-              'bg-gray-100 text-gray-700'
-            }`}>
-              {status.color === 'green' && <span className="w-1.5 h-1.5 bg-[#2d7a3a] rounded-full"></span>}
+            <span className="inline-flex items-center gap-1.5 shadow-sm"
+            style={{
+              background: status.color === 'green' ? '#10B981' : status.color === 'blue' ? '#DBEAFE' : '#F3F4F6',
+              color: status.color === 'green' ? '#FFFFFF' : status.color === 'blue' ? '#2563EB' : '#6B7280',
+              border: status.color === 'gray' ? '1px solid #D1D5DB' : undefined,
+              padding: '4px 12px',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: 600,
+            }}>
+              {status.color === 'green' && <span style={{ width: '6px', height: '6px', background: '#FFFFFF', borderRadius: '50%', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}></span>}
+              {status.color === 'blue' && <span style={{ width: '6px', height: '6px', background: '#2563EB', borderRadius: '50%' }}></span>}
               {status.label}
             </span>
           </div>
           
           {event.feedback_open_at && event.feedback_close_at ? (
-            <p className="text-[12px] text-gray-500">
+            <p className="text-[13px] text-gray-600">
               {formatDateTime(event.feedback_open_at)} — {formatDateTime(event.feedback_close_at)}
             </p>
           ) : (
-            <p className="text-[12px] text-gray-400">No feedback window set</p>
+            <p className="text-[13px] text-gray-500">No feedback window set</p>
           )}
         </div>
 
         {/* Event Token Section */}
         <div className="mb-6">
-          <p className="text-[11.5px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+          <p className="mb-2" style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Event Token
           </p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-[12.5px] font-mono text-gray-600 bg-gray-50 px-3 py-2 rounded-md tracking-wide">
+            <code className="flex-1 text-[13px] font-mono text-gray-700 bg-gray-50 px-3 py-2 rounded-md tracking-wide border border-gray-200">
               {event.public_token}
             </code>
             <button
@@ -216,23 +231,29 @@ export default function EventCard({ event, onUpdate }: EventCardProps) {
         <div className="grid grid-cols-2 gap-3 mb-4">
           <button
             onClick={() => setShowQRModal(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-300 hover:bg-gray-900 hover:text-white hover:border-gray-900 text-gray-700 text-[12.5px] rounded-lg font-medium transition-all"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-lg font-semibold transition-all shadow-sm hover:shadow-md"
+            style={{ backgroundColor: '#6366F1', fontSize: '13px' }}
+            onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#4F46E5'}
+            onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#6366F1'}
           >
-            <QrCode className="w-[13px] h-[13px]" />
+            <QrCode className="w-[14px] h-[14px]" />
             QR Code
           </button>
           
           <button
             onClick={() => router.push(`/analytics/${event.id}`)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-300 hover:bg-gray-900 hover:text-white hover:border-gray-900 text-gray-700 text-[12.5px] rounded-lg font-medium transition-all"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-lg font-semibold transition-all shadow-sm hover:shadow-md"
+            style={{ backgroundColor: '#6366F1', fontSize: '13px' }}
+            onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#4F46E5'}
+            onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#6366F1'}
           >
-            <BarChart3 className="w-[13px] h-[13px]" />
+            <BarChart3 className="w-[14px] h-[14px]" />
             Analytics
           </button>
         </div>
 
         {/* Created Date */}
-        <p className="text-[11px] text-gray-500 font-normal">
+        <p className="font-normal" style={{ fontSize: '12px', color: '#6B7280' }}>
           Created {formatDate(event.created_at)}
         </p>
       </div>

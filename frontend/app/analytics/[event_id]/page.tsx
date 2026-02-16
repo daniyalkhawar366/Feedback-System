@@ -55,10 +55,10 @@ export default function AnalyticsPage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-[#f6f5f2] flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
           <div className="text-center">
-            <Loader2 className="w-12 h-12 text-[#1a1917] mx-auto mb-4" style={{ animation: 'spin 1s linear infinite' }} />
-            <p className="text-[#6b6760] font-medium">Loading analytics...</p>
+            <Loader2 className="w-12 h-12 text-blue-500 mx-auto mb-4" style={{ animation: 'spin 1s linear infinite' }} />
+            <p className="text-gray-600 font-semibold text-base">Loading analytics...</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -67,26 +67,26 @@ export default function AnalyticsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#f6f5f2]">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         {/* Header */}
-        <header className="bg-white border-b border-[#e8e5df] sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <header className="bg-white/80 backdrop-blur-md border-b border-blue-100 sticky top-0 z-10 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="p-2 hover:bg-[#fafaf8] rounded-xl transition-colors"
+                  className="p-2 hover:bg-blue-50 rounded-xl transition-all hover:scale-105"
                 >
-                  <ArrowLeft className="w-6 h-6 text-[#1a1917]" />
+                  <ArrowLeft className="w-6 h-6 text-gray-700" />
                 </button>
                 <div>
                   <h1
-                    className="text-xl font-medium text-[#1a1917]"
-                    style={{ fontFamily: "'Instrument Serif', serif", letterSpacing: '-0.01em' }}
+                    className="text-2xl font-bold text-gray-900"
+                    style={{ letterSpacing: '-0.02em' }}
                   >
                     {event?.title || 'Event Analytics'}
                   </h1>
-                  <div className="flex items-center gap-3 text-sm text-[#6b6760]">
+                  <div className="flex items-center gap-3 text-[15px] text-gray-600">
                     {event?.event_date && (
                       <span>
                         {new Date(event.event_date).toLocaleDateString()}
@@ -94,7 +94,7 @@ export default function AnalyticsPage() {
                     )}
                     {event?.feedback_open_at && event?.feedback_close_at && (
                       <>
-                        <span className="text-[#9e9a93]">•</span>
+                        <span className="text-gray-400">•</span>
                         <span className="flex items-center gap-1">
                           Feedback: {new Date(event.feedback_open_at).toLocaleString('en-US', { 
                             month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
@@ -110,19 +110,19 @@ export default function AnalyticsPage() {
                           
                           if (now < openAt) {
                             return (
-                              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+                              <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[13px] font-semibold rounded-full shadow-sm">
                                 Upcoming
                               </span>
                             );
                           } else if (now >= openAt && now <= closeAt) {
                             return (
-                              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                              <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[13px] font-semibold rounded-full shadow-sm">
                                 Open
                               </span>
                             );
                           } else {
                             return (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full">
+                              <span className="px-2.5 py-1 bg-gray-100 text-gray-700 text-[13px] font-semibold rounded-full shadow-sm">
                                 Closed
                               </span>
                             );
@@ -141,7 +141,7 @@ export default function AnalyticsPage() {
         </header>
 
         {/* Tab Navigation */}
-        <div className="bg-white border-b border-[#e8e5df]">
+        <div className="bg-white/80 backdrop-blur-md border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex overflow-x-auto scrollbar-hide">
               {tabs.map((tab) => {
@@ -150,10 +150,10 @@ export default function AnalyticsPage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 whitespace-nowrap ${
+                    className={`flex items-center gap-2 px-6 py-4 font-semibold transition-all border-b-2 whitespace-nowrap text-[15px] ${
                       activeTab === tab.id
-                        ? 'border-[#1a1917] text-[#1a1917]'
-                        : 'border-transparent text-[#6b6760] hover:text-[#1a1917]'
+                        ? 'border-blue-500 text-blue-600 bg-blue-50/50'
+                        : 'border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
