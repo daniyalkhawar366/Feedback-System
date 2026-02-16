@@ -174,6 +174,9 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
   const [hasReport, setHasReport] = useState<boolean | null>(null);
   const [loadingReport, setLoadingReport] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     checkForReport();
@@ -196,9 +199,10 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
       setGenerating(true);
       await api.post(`/api/reports/events/${eventId}/generate`);
       await checkForReport();
-      alert('Report generated successfully! Check the Summary and Insights tabs.');
+      setShowSuccessModal(true);
     } catch (error: any) {
-      alert(error.response?.data?.detail || 'Failed to generate report. Please try again.');
+      setErrorMessage(error.response?.data?.detail || 'Failed to generate report. Please try again.');
+      setShowErrorModal(true);
     } finally {
       setGenerating(false);
     }
@@ -383,6 +387,7 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
     (stats.sentiment_distribution?.negative?.percentage || 0) > 40 ? 'mixed' : 'neutral';
 
   return (
+    <>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* ── Key metrics ── */}
@@ -653,5 +658,92 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
       </SectionCard>
 
     </div>
+
+    {/* Success Modal */}
+    {showSuccessModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in duration-300">
+          {/* Success Icon */}
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: '#D1FAE5' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+          </div>
+          
+          {/* Content */}
+          <div className="text-center mb-8">
+            <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>
+              Report Generated!
+            </h3>
+            <p style={{ fontSize: '15px', color: '#6B7280', lineHeight: 1.6 }}>
+              Your event report has been generated successfully. Check the <strong>Summary</strong> and <strong>Insights</strong> tabs to view the detailed analysis.
+            </p>
+          </div>
+
+          {/* Button */}
+          <button
+            onClick={() => setShowSuccessModal(false)}
+            className="w-full py-3 px-4 rounded-xl font-semibold transition-all"
+            style={{
+              background: '#6366F1',
+              color: '#FFFFFF',
+              fontSize: '15px',
+              fontWeight: 600,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#4F46E5')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#6366F1')}
+          >
+            Got it!
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* Error Modal */}
+    {showErrorModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in duration-300">
+          {/* Error Icon */}
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: '#FEE2E2' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+              </svg>
+            </div>
+          </div>
+          
+          {/* Content */}
+          <div className="text-center mb-8">
+            <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>
+              Generation Failed
+            </h3>
+            <p style={{ fontSize: '15px', color: '#6B7280', lineHeight: 1.6 }}>
+              {errorMessage}
+            </p>
+          </div>
+
+          {/* Button */}
+          <button
+            onClick={() => setShowErrorModal(false)}
+            className="w-full py-3 px-4 rounded-xl font-semibold transition-all"
+            style={{
+              background: '#EF4444',
+              color: '#FFFFFF',
+              fontSize: '15px',
+              fontWeight: 600,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#DC2626')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#EF4444')}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    )}
+  </>
   );
 }
