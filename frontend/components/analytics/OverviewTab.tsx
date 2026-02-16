@@ -29,7 +29,6 @@ import type { EventStats } from '@/types/api';
 
 interface OverviewTabProps {
   eventId: string;
-  stats: EventStats;
 }
 
 // ── Design tokens (modern color scheme) ────────────────────────────────────────
@@ -170,17 +169,32 @@ const customTooltipStyle = {
 
 // ── Main component ───────────────────────────────────────────────────────────
 
-export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
+export default function OverviewTab({ eventId }: OverviewTabProps) {
+  const [stats, setStats] = useState<EventStats | null>(null);
   const [hasReport, setHasReport] = useState<boolean | null>(null);
   const [loadingReport, setLoadingReport] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
+    fetchStats();
     checkForReport();
   }, [eventId]);
+
+  const fetchStats = async () => {
+    try {
+      setLoadingStats(true);
+      const response = await api.get<EventStats>(`/analytics/events/${eventId}/stats`);
+      setStats(response.data);
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const checkForReport = async () => {
     try {
@@ -209,15 +223,7 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
   };
 
   // ── Loading ──────────────────────────────────────────────────────────────
-  if (!stats) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
-        <p style={{ fontSize: 13.5, color: t.textMuted }}>No statistics available</p>
-      </div>
-    );
-  }
-
-  if (loadingReport) {
+  if (loadingStats || loadingReport) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
         <div style={{ textAlign: 'center' }}>
@@ -227,7 +233,13 @@ export default function OverviewTab({ eventId, stats }: OverviewTabProps) {
       </div>
     );
   }
-
+  if (!stats) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
+        <p style={{ fontSize: 13.5, color: t.textMuted }}>No statistics available</p>
+      </div>
+    );
+  }
   // ── No report yet ────────────────────────────────────────────────────────
   if (!hasReport) {
     const noFeedback = (stats.total_feedback || 0) === 0;

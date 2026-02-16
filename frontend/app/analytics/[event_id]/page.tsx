@@ -10,7 +10,7 @@ import InsightsTab from '@/components/analytics/InsightsTab';
 import FeedbacksTab from '@/components/analytics/FeedbacksTab';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/utils/api';
-import type { EventRead, EventStats } from '@/types/api';
+import type { EventRead } from '@/types/api';
 
 type TabType = 'overview' | 'summary' | 'insights' | 'feedbacks';
 
@@ -22,7 +22,6 @@ export default function AnalyticsPage() {
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [event, setEvent] = useState<EventRead | null>(null);
-  const [stats, setStats] = useState<EventStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,12 +31,8 @@ export default function AnalyticsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [eventRes, statsRes] = await Promise.all([
-        api.get<EventRead>(`/events/${eventId}`),
-        api.get<EventStats>(`/analytics/events/${eventId}/stats`),
-      ]);
+      const eventRes = await api.get<EventRead>(`/events/${eventId}`);
       setEvent(eventRes.data);
-      setStats(statsRes.data);
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
     } finally {
@@ -167,7 +162,7 @@ export default function AnalyticsPage() {
 
         {/* Tab Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {activeTab === 'overview' && stats && <OverviewTab eventId={eventId} stats={stats} />}
+          {activeTab === 'overview' && <OverviewTab eventId={eventId} />}
           {activeTab === 'summary' && <SummaryTab eventId={eventId} />}
           {activeTab === 'insights' && <InsightsTab eventId={eventId} />}
           {activeTab === 'feedbacks' && <FeedbacksTab eventId={eventId} />}

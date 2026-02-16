@@ -66,7 +66,15 @@ COMMON_ENGLISH_WORDS = {
     "up", "down", "out", "in", "over", "under", "above", "below", "through", "during", "before", "after",
     "get", "make", "take", "give", "go", "come", "see", "know", "think", "say", "tell", "ask", "show",
     "session", "learned", "about", "fastapi", "great", "thanks", "thank", "love", "like", "enjoyed",
-    "presentation", "speaker", "event", "conference", "training", "course", "information", "helpful"
+    "presentation", "speaker", "event", "conference", "training", "course", "information", "helpful",
+    "problem", "problems", "statement", "statements", "relevant", "world", "application", "applications",
+    "real", "learning", "learn", "understand", "understood", "clear", "content", "topics", "topic",
+    "examples", "example", "practical", "useful", "insightful", "informative", "engaging", "interesting",
+    "loved", "liked", "appreciated", "wonderful", "fantastic", "awesome", "impressed", "impressed",
+    "time", "day", "today", "week", "experience", "work", "working", "project", "projects", "knowledge",
+    "skills", "skill", "improve", "improved", "improvement", "better", "best", "worst", "issues",
+    "question", "questions", "answer", "answers", "explanation", "explained", "detail", "details",
+    "student", "students", "teacher", "teachers", "instructor", "instructors", "class", "classes"
 }
 
 FILLER_WORDS = {
@@ -170,6 +178,36 @@ def char_entropy(text: str) -> float:
     )
 
 
+def has_vowel(word: str) -> bool:
+    """Check if word has at least one vowel"""
+    vowels = set('aeiouAEIOU')
+    return any(c in vowels for c in word)
+
+
+def is_keyboard_smash(word: str) -> bool:
+    """Detect keyboard smashing patterns like 'asdf', 'qwer', 'zxcv'"""
+    word_lower = word.lower()
+    
+    # Common keyboard row patterns
+    keyboard_patterns = [
+        'qwer', 'wert', 'erty', 'rtyu', 'tyui', 'yuio', 'uiop',  # Top row
+        'asdf', 'sdfg', 'dfgh', 'fghj', 'ghjk', 'hjkl',  # Middle row
+        'zxcv', 'xcvb', 'cvbn', 'vbnm',  # Bottom row
+        'qaz', 'wsx', 'edc', 'rfv', 'tgb', 'yhn', 'ujm',  # Vertical patterns
+    ]
+    
+    # Check if word contains any keyboard pattern
+    for pattern in keyboard_patterns:
+        if pattern in word_lower:
+            return True
+    
+    # Check for repeated adjacent chars on keyboard (like 'aaa', 'sss')
+    if len(word) >= 3 and len(set(word.lower())) == 1:
+        return True
+    
+    return False
+
+
 def english_word_ratio(words: List[str]) -> float:
     if not words:
         return 0.0
@@ -177,7 +215,19 @@ def english_word_ratio(words: List[str]) -> float:
     valid_count = 0
     for w in words:
         w_lower = w.lower()
-        if w_lower in COMMON_ENGLISH_WORDS or (len(w_lower) > 2 and w_lower.isalpha()):
+        
+        # Must be in common words list OR meet strict criteria
+        if w_lower in COMMON_ENGLISH_WORDS:
+            valid_count += 1
+        elif len(w_lower) > 2 and w_lower.isalpha():
+            # Additional checks for unknown words
+            # Must have vowels (almost all English words have vowels)
+            if not has_vowel(w_lower):
+                continue
+            # Must not be keyboard smashing
+            if is_keyboard_smash(w_lower):
+                continue
+            # If it passes these checks, consider it valid
             valid_count += 1
     
     return valid_count / len(words)
@@ -247,6 +297,16 @@ def gibberish_score(text: str) -> float:
     
     # Check for repeated character patterns (e.g., "lalalalalala")
     for word in words:
+        # Keyboard smashing detection
+        if is_keyboard_smash(word):
+            gibberish_count += 1.0
+            continue
+        
+        # Words without vowels (except known words like "gym", "my")
+        if len(word) > 2 and not has_vowel(word) and word not in COMMON_ENGLISH_WORDS:
+            gibberish_count += 0.9
+            continue
+        
         # If word is just repeating 1-3 characters, very high score
         if len(word) > 4:
             unique_chars = len(set(word))
@@ -343,7 +403,7 @@ def validate_text_feedback(text: str) -> Dict:
         flags.append("non_english_language_detected")
     
     eng_ratio = english_word_ratio(words)
-    if eng_ratio < 0.65:
+    if eng_ratio < 0.50:  # Stricter: at least 50% must be valid English words
         flags.append("low_english_word_ratio")
     
     entropy = char_entropy(normalized)
@@ -369,10 +429,10 @@ def validate_text_feedback(text: str) -> Dict:
         flags.append("low_coherence")
     
     gibberish = gibberish_score(normalized)
-    if gibberish > 0.5:
+    if gibberish > 0.3:  # Stricter: 30% gibberish is too much
         # Very high gibberish - FLAG instead of REJECT
         flags.append("high_gibberish_content")
-    elif gibberish > 0.15:
+    elif gibberish > 0.1:  # Any gibberish detected
         flags.append("gibberish_detected")
     
     spam = detect_spam_patterns(text)

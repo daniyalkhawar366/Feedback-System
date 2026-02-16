@@ -30,9 +30,25 @@ if missing_vars:
 
 app = FastAPI(title="Intelligent Feedback System")
 
+# CORS Configuration - supports both development and production
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+allowed_origins = [
+    "http://localhost:3000",  # Local development
+    "http://localhost:3001",
+    frontend_url,  # Production frontend
+]
+
+# Add Vercel preview deployments if frontend_url is Vercel
+if "vercel.app" in frontend_url:
+    allowed_origins.append("https://*.vercel.app")
+
+# For development, allow all origins
+if os.getenv("ENVIRONMENT", "development") == "development":
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins in development
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
