@@ -1,13 +1,24 @@
 from dotenv import load_dotenv
-# MongoDB connection (new)
+import os
+
+# Load environment variables first
+load_dotenv()
+
+# MongoDB connection (production)
 from db.mongodb import connect_to_mongo, close_mongo_connection
-# Keep SQLite for now (for migration script)
-from db.db import SessionDep, engine, create_db_and_tables
+
+# SQLite imports only for development/migration (not needed in production)
+if os.getenv("ENVIRONMENT") != "production" and not os.getenv("RAILWAY_ENVIRONMENT"):
+    try:
+        from db.db import SessionDep, engine, create_db_and_tables
+    except ImportError:
+        # SQLModel not installed (production environment)
+        pass
+
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-import os
 from routes.health import router as health_router
 from routes.speaker import router as speaker_router
 from routes.event import router as event_router
@@ -15,9 +26,6 @@ from routes.feedback import router as feedback_router
 from routes.login import router as login_router
 from routes.analytics import router as analytics_router
 from routes.reports import router as reports_router
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Validate required environment variables
 required_env_vars = ["MONGODB_URL", "SECRET_KEY", "GROQ_API_KEY"]
