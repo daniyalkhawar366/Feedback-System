@@ -2,13 +2,20 @@
 Feedback Handler - MongoDB Version (Async)
 """
 import json
+import os
 from datetime import datetime
 from fastapi import HTTPException, status
 from typing import List, Dict, Optional
 
 from db.mongo_models import FeedbackDocument, FeedbackAnalysisDocument, EventDocument
 from handlers.event import get_event_by_token
-from speech_to_text import transcribe_audio
+
+# Use cloud-based transcription in production (Railway), local for development
+if os.getenv("ENVIRONMENT") == "production" or os.getenv("RAILWAY_ENVIRONMENT"):
+    from speech_to_text_cloud import transcribe_audio
+else:
+    from speech_to_text import transcribe_audio
+
 from text_validation import validate_text_feedback, is_valid_feedback
 
 

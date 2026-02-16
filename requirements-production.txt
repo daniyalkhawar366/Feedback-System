@@ -1,0 +1,61 @@
+# ============================================
+# PRODUCTION REQUIREMENTS - Railway Deployment
+# ============================================
+# Lightweight version without heavy ML packages
+# Uses Groq API for all LLM/transcription needs
+
+# FastAPI Core
+fastapi==0.128.0
+uvicorn[standard]==0.40.0
+python-multipart==0.0.21
+python-dotenv==1.2.1
+
+# Database - MongoDB
+motor==3.7.1
+beanie==2.0.1
+pymongo==4.16.0
+dnspython==2.8.0
+
+# Authentication & Security
+python-jose[cryptography]==3.5.0
+passlib[bcrypt]==1.7.4
+bcrypt==5.0.0
+cryptography==46.0.3
+
+# Email validation
+email-validator==2.3.0
+
+# Pydantic (data validation)
+pydantic==2.12.5
+pydantic-settings==2.12.0
+
+# HTTP Client
+httpx==0.28.1
+requests==2.32.5
+
+# LLM - Groq API (cloud-based, no local models needed)
+groq==0.37.1
+
+# Langchain for report generation
+langchain-core==1.2.13
+langchain-groq==1.1.2
+langgraph==1.0.8
+langgraph-checkpoint==4.0.0
+
+# Data processing
+pandas==3.0.0
+numpy==2.4.1
+
+# QR Code generation
+qrcode==8.2
+pillow==12.1.0
+
+# Utilities
+python-dateutil==2.9.0.post0
+
+# Note: Removed packages not needed in production:
+# - faster-whisper (use Groq API for transcription instead)
+# - torch, transformers (too heavy, not needed)
+# - All NVIDIA CUDA packages (no GPU on Railway)
+# - onnxruntime (not needed)
+# - soundfile, av (audio processing can use Groq)
