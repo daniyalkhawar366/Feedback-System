@@ -6,12 +6,16 @@ NO raw feedback is sent to the LLM.
 """
 import json
 from typing import Dict
-from consensus.llm_client import call_llm
+from consensus.llm_client import call_llm, register_cached_prompt
 
 
 REPORT_SYSTEM_PROMPT = """You are an expert event feedback analyst.
 Generate a professional, concise feedback report for event organizers.
 Be insightful, constructive, and actionable."""
+
+# Register as cached input — this prompt is static and reused across all
+# report generation calls, qualifying for discounted cached-input billing.
+register_cached_prompt(REPORT_SYSTEM_PROMPT)
 
 
 def build_report_prompt(event_name: str, analytics: Dict) -> str:
@@ -133,7 +137,9 @@ def generate_event_report(event_name: str, analytics: Dict, model: str = None) -
             user_prompt=user_prompt,
             model=model,
             temperature=0.3,  # Slightly creative for better prose
-            json_mode=True
+            json_mode=True,
+            operation="generate_report",
+            event_id=analytics.get("event_id")
         )
         
         print(f"📄 LLM Response (first 200 chars): {response[:200]}")

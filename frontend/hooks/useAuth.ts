@@ -40,8 +40,13 @@ export function useAuth() {
     const response = await api.post<AuthResponse>('/login/', credentials);
 
     localStorage.setItem('token', response.data.access_token);
-    await checkAuth();
-    return response.data;
+
+    // Fetch speaker info to determine role before returning
+    const speakerRes = await api.get<Speaker>('/speakers/me');
+    setSpeaker(speakerRes.data);
+    setIsAuthenticated(true);
+
+    return { ...response.data, speaker: speakerRes.data };
   };
 
   const register = async (data: RegisterRequest) => {
@@ -55,10 +60,13 @@ export function useAuth() {
     router.push('/');
   };
 
+  const isAdmin = speaker?.role === 'admin';
+
   return {
     speaker,
     isAuthenticated,
     isLoading,
+    isAdmin,
     login,
     register,
     logout,

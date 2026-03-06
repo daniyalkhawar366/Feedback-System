@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, LogOut, ClipboardList } from 'lucide-react';
+import { Plus, LogOut, ClipboardList, Activity } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import EventCard from '@/components/dashboard/EventCard';
 import CreateEventModal from '@/components/dashboard/CreateEventModal';
@@ -61,14 +61,25 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Sign out Button */}
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 text-[14px] text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg font-medium transition-all"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Sign out</span>
-              </button>
+              {/* Actions */}
+              <div className="flex items-center gap-2">
+                {speaker?.role === 'admin' && (
+                  <button
+                    onClick={() => router.push('/monitoring')}
+                    className="flex items-center gap-2 px-4 py-2 text-[14px] text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg font-medium transition-all"
+                  >
+                    <Activity className="w-4 h-4" />
+                    <span>Monitoring</span>
+                  </button>
+                )}
+                <button
+                  onClick={logout}
+                  className="flex items-center gap-2 px-4 py-2 text-[14px] text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg font-medium transition-all"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign out</span>
+                </button>
+              </div>
             </div>
           </div>
         </header>

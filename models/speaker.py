@@ -18,6 +18,7 @@ class SpeakerRead(BaseModel):
     name: str
     email: EmailStr
     is_active: bool
+    role: str = "speaker"
     created_at: datetime
 
     class Config:

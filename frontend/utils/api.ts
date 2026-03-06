@@ -27,10 +27,16 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('token');
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+      // Don't redirect if the 401 came from the login or register endpoint itself
+      const requestUrl = error.config?.url || '';
+      const isAuthRequest = requestUrl.includes('/login') || requestUrl.includes('/register');
+
+      if (!isAuthRequest) {
+        // Unauthorized on a protected request - clear token and redirect to home (login page)
+        localStorage.removeItem('token');
+        if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+          window.location.href = '/';
+        }
       }
     }
     return Promise.reject(error);

@@ -26,9 +26,10 @@ from routes.feedback import router as feedback_router
 from routes.login import router as login_router
 from routes.analytics import router as analytics_router
 from routes.reports import router as reports_router
+from routes.monitoring import router as monitoring_router
 
 # Validate required environment variables
-required_env_vars = ["MONGODB_URL", "SECRET_KEY", "GROQ_API_KEY"]
+required_env_vars = ["MONGODB_URL", "SECRET_KEY", "OPENAI_API_KEY"]
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise RuntimeError(
@@ -84,6 +85,7 @@ app.include_router(login_router)
 app.include_router(feedback_router)
 app.include_router(analytics_router)
 app.include_router(reports_router)
+app.include_router(monitoring_router)
 
 # Mount static files for audio uploads
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")

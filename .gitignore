@@ -7,7 +7,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
-
+/monitoring
 # Virtual Environment (already present)
 /myvenv
 venv/

@@ -47,6 +47,7 @@ async def connect_to_mongo():
             EventAnalyticsDocument,
             EventReportDocument
         )
+        from db.usage_models import APIUsageDocument
         
         # Initialize Beanie with the database and models
         await init_beanie(
@@ -57,7 +58,8 @@ async def connect_to_mongo():
                 FeedbackDocument,
                 FeedbackAnalysisDocument,
                 EventAnalyticsDocument,
-                EventReportDocument
+                EventReportDocument,
+                APIUsageDocument
             ]
         )
         

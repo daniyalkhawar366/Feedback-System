@@ -6,13 +6,17 @@ Returns structured labels only - no prose, no summaries.
 """
 import json
 from typing import Dict, List
-from consensus.llm_client import call_llm, get_llm
+from consensus.llm_client import call_llm, get_llm, register_cached_prompt, init_event_loop
 
 
 CLASSIFICATION_SYSTEM_PROMPT = """You are an NLP classification engine.
 Your task is to analyze event feedback and return a strict JSON object.
 Do not explain anything.
 Do not add extra text."""
+
+# Register as cached input — this prompt is static and reused across all
+# classification calls, qualifying for discounted cached-input billing.
+register_cached_prompt(CLASSIFICATION_SYSTEM_PROMPT)
 
 
 def build_classification_prompt(feedback_text: str) -> str:
@@ -50,13 +54,14 @@ JSON format:
 }}"""
 
 
-def classify_single_feedback(feedback_text: str, model: str = None) -> Dict:
+def classify_single_feedback(feedback_text: str, model: str = None, event_id: str = None) -> Dict:
     """
     Classify a single feedback using LLM.
     
     Args:
         feedback_text: The feedback text to classify
         model: LLM model to use (default: from env)
+        event_id: Event ID for usage tracking
         
     Returns:
         Dict with sentiment, confidence, intent, aspects
@@ -72,7 +77,9 @@ def classify_single_feedback(feedback_text: str, model: str = None) -> Dict:
             user_prompt=user_prompt,
             model=model,
             temperature=0.0,
-            json_mode=True
+            json_mode=True,
+            operation="classify_feedback",
+            event_id=event_id
         )
         
         result = json.loads(response)
@@ -119,13 +126,14 @@ def classify_single_feedback(feedback_text: str, model: str = None) -> Dict:
         raise Exception(f"Classification failed: {e}")
 
 
-async def classify_feedbacks_parallel(feedbacks: List[Dict], model: str = None) -> List[Dict]:
+async def classify_feedbacks_parallel(feedbacks: List[Dict], model: str = None, event_id: str = None) -> List[Dict]:
     """
     Classify multiple feedbacks in parallel using asyncio.
     
     Args:
         feedbacks: List of dicts with 'id' and 'text' keys
         model: LLM model to use
+        event_id: Event ID for usage tracking
         
     Returns:
         List of classification results with feedback_id
@@ -136,7 +144,7 @@ async def classify_feedbacks_parallel(feedbacks: List[Dict], model: str = None) 
     def classify_with_id(feedback: Dict) -> Dict:
         """Classify feedback and attach its ID."""
         try:
-            result = classify_single_feedback(feedback["text"], model=model)
+            result = classify_single_feedback(feedback["text"], model=model, event_id=event_id)
             result["feedback_id"] = feedback["id"]
             result["status"] = "success"
             return result
@@ -147,6 +155,10 @@ async def classify_feedbacks_parallel(feedbacks: List[Dict], model: str = None) 
                 "error": str(e)
             }
     
+    # Capture the running event loop so that _track_usage_async inside
+    # the thread-pool workers can schedule DB writes back on it.
+    init_event_loop()
+
     # Run classifications in parallel using thread pool
     with ThreadPoolExecutor(max_workers=10) as executor:
         loop = asyncio.get_event_loop()

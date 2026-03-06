@@ -34,7 +34,7 @@ async def generate_event_report(
     Args:
         event_id: ID of the event to analyze
         min_feedback: Minimum number of feedbacks required (default: 1)
-        model: LLM model for classification (default: from env GROQ_MODEL)
+        model: LLM model for classification (default: from env OPENAI_MODEL)
     
     Returns:
         Generated report with analytics and insights

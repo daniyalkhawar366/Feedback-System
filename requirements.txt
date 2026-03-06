@@ -37,6 +37,7 @@ jwt==1.4.0
 
 # Consensus reporting dependencies
 langchain-core>=0.3.0
+langchain-openai>=0.3.0
 langchain-groq>=0.2.0
 langgraph>=0.2.0
 pandas>=2.0.0
@@ -100,6 +101,10 @@ soundfile==0.13.1
 motor>=3.3.0
 beanie>=1.23.0
 pymongo>=4.6.0
+
+# Monitoring dependencies
+prometheus-client>=0.20.0
+gtts>=2.5.0  # For test audio generation
 
 # SQLAlchemy (keep for migration)
 SQLAlchemy==2.0.45

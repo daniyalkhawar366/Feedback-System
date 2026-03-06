@@ -91,3 +91,27 @@ async def get_current_speaker(
 
     return speaker
 
+
+async def get_current_admin(
+    current_speaker: SpeakerDocument = Depends(get_current_speaker),
+) -> SpeakerDocument:
+    """
+    Verify that the current speaker is an admin.
+    
+    Args:
+        current_speaker: Authenticated speaker
+        
+    Returns:
+        Authenticated SpeakerDocument with admin role
+        
+    Raises:
+        HTTPException 403: If speaker is not an admin
+    """
+    if current_speaker.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required. This resource is only accessible to administrators.",
+        )
+    
+    return current_speaker
+

@@ -87,7 +87,7 @@ async def run_feedback_analysis_pipeline(
     # ============================================================
     print(f"🔍 Classifying {len(feedback_data)} feedbacks in parallel...")
     
-    classifications = await classify_feedbacks_parallel(feedback_data, model=model)
+    classifications = await classify_feedbacks_parallel(feedback_data, model=model, event_id=event_id)
     
     # Count successes and failures
     successful = [c for c in classifications if c.get("status") == "success"]
@@ -197,7 +197,7 @@ async def run_feedback_analysis_pipeline(
     # ============================================================
     print(f"📝 Generating event report...")
     
-    report = generate_report_with_fallback(event_name, analytics)
+    report = generate_report_with_fallback(event_name, {**analytics, "event_id": event_id})
     
     print(f"✅ Report generated")
     

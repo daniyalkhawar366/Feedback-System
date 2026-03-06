@@ -7,17 +7,22 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  adminOnly?: boolean;
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+export default function ProtectedRoute({ children, adminOnly = false }: ProtectedRouteProps) {
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/');
     }
-  }, [isAuthenticated, isLoading, router]);
+    // If adminOnly page and user is not admin, redirect to dashboard
+    if (!isLoading && isAuthenticated && adminOnly && !isAdmin) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, isLoading, isAdmin, adminOnly, router]);
 
   if (isLoading) {
     return (
@@ -31,6 +36,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!isAuthenticated) {
+    return null;
+  }
+
+  if (adminOnly && !isAdmin) {
     return null;
   }
 

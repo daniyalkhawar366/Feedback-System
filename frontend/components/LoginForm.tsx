@@ -3,6 +3,7 @@
 import React, { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import axios from 'axios';
 
 interface LoginFormProps {
   onSwitchToRegister?: () => void;
@@ -14,20 +15,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onSuccess,
 }) => {
   const router = useRouter();
-  const { login, isLoading, error, clearError } = useAuth();
+  const { login } = useAuth();
 
   const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState<{
     identifier?: string;
     password?: string;
   }>({});
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (fieldErrors[name as keyof typeof fieldErrors])
       setFieldErrors(prev => ({ ...prev, [name]: undefined }));
-    if (error) clearError();
+    if (error) setError(null);
   };
 
   const validateForm = (): boolean => {
@@ -42,16 +46,32 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setIsSubmitting(true);
+    setError(null);
     try {
-      const tokenResponse = await login({
+      const result = await login({
         identifier: formData.identifier,
         password: formData.password,
       });
-      localStorage.setItem('token', tokenResponse.access_token);
-      if (onSuccess) onSuccess();
-      else router.push('/dashboard');
-    } catch (err) {
-      console.error('Login failed:', err);
+      localStorage.setItem('token', result.access_token);
+
+      // Redirect admin users to monitoring dashboard
+      if (result.speaker?.role === 'admin') {
+        router.push('/monitoring');
+      } else if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push('/dashboard');
+      }
+    } catch (err: any) {
+      if (axios.isAxiosError(err) && err.response) {
+        const detail = err.response.data?.detail;
+        setError(typeof detail === 'string' ? detail : 'Invalid email/username or password');
+      } else {
+        setError('Invalid email/username or password');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -141,7 +161,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </div>
 
         {/* General error */}
-        {error && !error.field && (
+        {error && (
           <div
             style={{
               marginBottom: 20,
@@ -157,7 +177,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             <svg width="16" height="16" viewBox="0 0 20 20" fill="#dc2626" style={{ flexShrink: 0, marginTop: 1 }}>
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
-            <p style={{ fontSize: 14, color: '#991b1b', fontWeight: 500 }}>{error.message}</p>
+            <p style={{ fontSize: 14, color: '#991b1b', fontWeight: 500 }}>{error}</p>
           </div>
         )}
 
@@ -186,7 +206,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {/* Password */}
           <FieldGroup label="Password" error={fieldErrors.password}>
             <FieldInput
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               name="password"
               placeholder="••••••••"
               value={formData.password}
@@ -198,6 +218,27 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   <rect x="3" y="11" width="18" height="11" rx="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
+              }
+              suffix={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: '#9CA3AF' }}
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
               }
             />
           </FieldGroup>
@@ -233,45 +274,45 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {/* Submit */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isSubmitting}
             style={{
               marginTop: 4,
               width: '100%',
               padding: '12px 24px',
-              background: isLoading ? '#9CA3AF' : '#6366F1',
+              background: isSubmitting ? '#9CA3AF' : '#6366F1',
               color: '#FFFFFF',
               border: 'none',
               borderRadius: 8,
               fontSize: 15,
               fontWeight: 600,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
               transition: 'all 0.2s ease',
-              boxShadow: isLoading ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.05)',
+              boxShadow: isSubmitting ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.05)',
             }}
             onMouseEnter={e => {
-              if (!isLoading) {
+              if (!isSubmitting) {
                 (e.currentTarget as HTMLButtonElement).style.background = '#4F46E5';
                 (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
               }
             }}
             onMouseLeave={e => {
-              if (!isLoading) {
+              if (!isSubmitting) {
                 (e.currentTarget as HTMLButtonElement).style.background = '#6366F1';
                 (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
               }
             }}
             onMouseDown={e => {
-              if (!isLoading) (e.currentTarget as HTMLButtonElement).style.background = '#4338CA';
+              if (!isSubmitting) (e.currentTarget as HTMLButtonElement).style.background = '#4338CA';
             }}
             onMouseUp={e => {
-              if (!isLoading) (e.currentTarget as HTMLButtonElement).style.background = '#4F46E5';
+              if (!isSubmitting) (e.currentTarget as HTMLButtonElement).style.background = '#4F46E5';
             }}
           >
-            {isLoading ? (
+            {isSubmitting ? (
               <>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
                   <path d="M21 12a9 9 0 1 1-6.219-8.56" />
@@ -394,10 +435,12 @@ function FieldGroup({
 function FieldInput({
   icon,
   hasError,
+  suffix,
   ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & {
   icon?: React.ReactNode;
   hasError?: boolean;
+  suffix?: React.ReactNode;
 }) {
   const [focused, setFocused] = React.useState(false);
 
@@ -430,7 +473,7 @@ function FieldInput({
         style={{
           width: '100%',
           paddingLeft: icon ? 40 : 14,
-          paddingRight: 14,
+          paddingRight: suffix ? 42 : 14,
           paddingTop: 12,
           paddingBottom: 12,
           background: '#FFFFFF',
@@ -445,6 +488,18 @@ function FieldInput({
           boxShadow: focused ? '0 0 0 3px rgba(99, 102, 241, 0.1)' : 'none',
         }}
       />
+      {suffix && (
+        <span
+          style={{
+            position: 'absolute',
+            right: 10,
+            display: 'flex',
+            zIndex: 1,
+          }}
+        >
+          {suffix}
+        </span>
+      )}
     </div>
   );
 }

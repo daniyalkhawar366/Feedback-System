@@ -174,9 +174,10 @@ export interface AuthResponse {
 
 export interface Speaker {
   id: string;
-  username: string;
   email: string;
   name: string;
+  role: string;
+  is_active: boolean;
   created_at: string;
 }
 

@@ -20,6 +20,7 @@ async def create(speaker: SpeakerCreate):
         "name": doc.name,
         "email": doc.email,
         "is_active": doc.is_active,
+        "role": doc.role,
         "created_at": doc.created_at
     }
 
@@ -32,6 +33,7 @@ async def read_me(current_speaker: SpeakerDocument = Depends(get_current_speaker
         "name": current_speaker.name,
         "email": current_speaker.email,
         "is_active": current_speaker.is_active,
+        "role": current_speaker.role,
         "created_at": current_speaker.created_at
     }
 
@@ -48,6 +50,7 @@ async def list_all(
             "name": doc.name,
             "email": doc.email,
             "is_active": doc.is_active,
+            "role": doc.role,
             "created_at": doc.created_at
         }
         for doc in docs
@@ -66,6 +69,7 @@ async def update_me(
         "name": doc.name,
         "email": doc.email,
         "is_active": doc.is_active,
+        "role": doc.role,
         "created_at": doc.created_at
     }
 
