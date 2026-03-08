@@ -1,6 +1,14 @@
 import axios, { AxiosError } from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Clean up trailing slashes that cause 405/Redirection issues on POST
+API_BASE_URL = API_BASE_URL.replace(/\/+$/, '');
+
+// Ensure protocol is present for production domains
+if (API_BASE_URL.includes('.railway.app') && !API_BASE_URL.startsWith('http')) {
+  API_BASE_URL = `https://${API_BASE_URL}`;
+}
 
 // Create axios instance
 const api = axios.create({
