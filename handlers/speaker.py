@@ -32,14 +32,6 @@ async def create_speaker(data: SpeakerCreate) -> SpeakerDocument:
             detail="Email already registered"
         )
     
-    # Check if name already exists
-    existing_name = await SpeakerDocument.find_one(SpeakerDocument.name == data.name)
-    if existing_name:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Name already registered"
-        )
-    
     # Create new speaker document
     speaker_data = data.model_dump(exclude={"password"})
     speaker = SpeakerDocument(

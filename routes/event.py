@@ -21,7 +21,12 @@ from db.mongo_models import SpeakerDocument
 
 load_dotenv()
 BASE_URL = os.getenv("BASE_URL")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+# Sanitize FRONTEND_URL: Remove trailing slashes to prevent double slashes in QR URLs
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+
+# If it's a domain but missing protocol, assume https
+if "." in FRONTEND_URL and not FRONTEND_URL.startswith("http"):
+    FRONTEND_URL = f"https://{FRONTEND_URL}"
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
