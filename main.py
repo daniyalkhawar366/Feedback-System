@@ -40,20 +40,19 @@ if missing_vars:
 app = FastAPI(title="Intelligent Feedback System")
 
 # CORS Configuration
+# CORS Configuration
+import re
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
 allowed_origins = [
     "http://localhost:3000",
     "http://localhost:3001",
+    "https://localhost:3000",
     frontend_url,
 ]
 
-# Create a regex to allow Vercel previews (safe way to handle wildcards)
-# This will match something like https://feedback-system-abcde.vercel.app
-origin_regex = None
-if "vercel.app" in frontend_url:
-    # Escape the dot and use a wildcard before .vercel.app
-    import re
-    origin_regex = r"https://.*\.vercel\.app"
+# Create a regex to allow ALL Vercel deployments (including previews and renamed projects)
+# This is much safer than allowed_origins=["*"] but flexible enough for your deployment.
+origin_regex = r"https://.*\.vercel\.app"
 
 app.add_middleware(
     CORSMiddleware,
