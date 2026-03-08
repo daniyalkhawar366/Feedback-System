@@ -204,6 +204,13 @@ export interface ConsensusReport {
   generation_time: number;
   generated_at: string;
   summary: ConsensusReportSummary;
+  analytics: {
+    satisfaction_score: number;
+    sentiment_distribution: Record<string, SentimentCount>;
+    top_strengths: Record<string, number>;
+    top_issues: Record<string, number>;
+    intent_summary: Record<string, number>;
+  };
   highlights: string[];
   concerns: string[];
   next_steps: string[];
