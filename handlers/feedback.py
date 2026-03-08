@@ -178,7 +178,7 @@ async def list_event_feedback(event_id: str) -> List[Dict]:
             "input_type": feedback.input_type,
             "raw_text": feedback.raw_text,
             "normalized_text": feedback.normalized_text,
-            "audio_path": f"http://localhost:8000/{feedback.audio_path}" if feedback.audio_path else None,
+            "audio_path": f"{os.getenv('BACKEND_URL', os.getenv('BASE_URL', 'http://localhost:8000'))}/{feedback.audio_path}" if feedback.audio_path else None,
             "quality_decision": feedback.quality_decision,
             "quality_flags": feedback.quality_flags,
             "sentiment": analysis.sentiment if analysis else None,
@@ -212,7 +212,8 @@ async def get_feedback_detail(feedback_id: str, event_id: str) -> Optional[Dict]
 
     audio_url = None
     if feedback.audio_path:
-        audio_url = f"http://localhost:8000/{feedback.audio_path}"
+        backend_url = os.getenv('BACKEND_URL', os.getenv('BASE_URL', 'http://localhost:8000'))
+        audio_url = f"{backend_url}/{feedback.audio_path}"
     
     return {
         "id": str(feedback.id),

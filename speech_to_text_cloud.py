@@ -77,15 +77,15 @@ def transcribe_audio(audio_path: str) -> Dict:
         # Validate audio duration (1-30 seconds)
         if duration < 1:
             return {
-                "status": "error",
-                "message": "Audio too short (minimum 1 second)",
+                "success": False,
+                "reason": "Audio too short (minimum 1 second)",
                 "type": "duration"
             }
         
         if duration > 30:
             return {
-                "status": "error",
-                "message": "Audio too long (maximum 30 seconds)",
+                "success": False,
+                "reason": "Audio too long (maximum 30 seconds)",
                 "type": "duration"
             }
         
@@ -103,8 +103,8 @@ def transcribe_audio(audio_path: str) -> Dict:
         # Check if transcription is empty
         if not transcribed_text:
             return {
-                "status": "error",
-                "message": "No speech detected in audio",
+                "success": False,
+                "reason": "No speech detected in audio",
                 "type": "empty"
             }
         
@@ -112,23 +112,23 @@ def transcribe_audio(audio_path: str) -> Dict:
         word_count = len(transcribed_text.split())
         if word_count < 3:
             return {
-                "status": "error",
-                "message": "Transcription too short (minimum 3 words)",
+                "success": False,
+                "reason": "Transcription too short (minimum 3 words)",
                 "type": "short"
             }
         
         return {
-            "status": "success",
-            "text": transcribed_text,
-            "duration": duration,
+            "success": True,
+            "raw_text": transcribed_text,
+            "audio_duration": duration,
             "word_count": word_count,
             "language": "en"
         }
     
     except Exception as e:
         return {
-            "status": "error",
-            "message": f"Transcription failed: {str(e)}",
+            "success": False,
+            "reason": f"Transcription failed: {str(e)}",
             "type": "processing"
         }
     
