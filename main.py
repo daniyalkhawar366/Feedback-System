@@ -39,25 +39,26 @@ if missing_vars:
 
 app = FastAPI(title="Intelligent Feedback System")
 
-# CORS Configuration - supports both development and production
-frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+# CORS Configuration
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
 allowed_origins = [
-    "http://localhost:3000",  # Local development
+    "http://localhost:3000",
     "http://localhost:3001",
-    frontend_url,  # Production frontend
+    frontend_url,
 ]
 
-# Add Vercel preview deployments if frontend_url is Vercel
+# Create a regex to allow Vercel previews (safe way to handle wildcards)
+# This will match something like https://feedback-system-abcde.vercel.app
+origin_regex = None
 if "vercel.app" in frontend_url:
-    allowed_origins.append("https://*.vercel.app")
-
-# For development, allow all origins
-if os.getenv("ENVIRONMENT", "development") == "development":
-    allowed_origins = ["*"]
+    # Escape the dot and use a wildcard before .vercel.app
+    import re
+    origin_regex = r"https://.*\.vercel\.app"
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
