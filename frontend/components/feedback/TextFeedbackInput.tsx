@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import axios from 'axios';
-import { Loader2, Send, AlertCircle } from 'lucide-react';
+import { Loader2, Send, AlertCircle, Quote } from 'lucide-react';
 import { API_BASE_URL } from '@/utils/api';
 import type { FeedbackResponse } from '@/types/api';
 
@@ -37,7 +37,7 @@ export default function TextFeedbackInput({ publicToken, onSuccess }: TextFeedba
         `${API_BASE_URL}/feedback/${publicToken}/text`,
         { text }
       );
-      
+
       setText('');
       onSuccess();
     } catch (err: any) {
@@ -49,24 +49,24 @@ export default function TextFeedbackInput({ publicToken, onSuccess }: TextFeedba
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Instructions */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <p className="text-sm text-gray-900 flex items-start gap-2">
-          <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-          </svg>
-          <span>
-            Share your honest feedback about the event. Your input helps us improve future experiences!
-          </span>
-        </p>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 animate-fade-up h-full">
+      {/* Friendly Instruction Callout */}
+      <div className="bg-[#44bea9]/10 border border-[#44bea9]/20 rounded-[14px] p-3 flex gap-3 shrink-0">
+        <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm text-[#44bea9]">
+          <Quote className="w-3.5 h-3.5" />
+        </div>
+        <div className="pt-0.5">
+          <p className="text-[13.5px] font-medium text-[#2d7d6f] leading-snug">
+            Share your honest thoughts.
+          </p>
+          <p className="text-[12.5px] text-[#328f7f]/80 mt-0.5 leading-relaxed">
+            What went perfectly? What could be improved for next time?
+          </p>
+        </div>
       </div>
 
-      {/* Text Area */}
-      <div>
-        <label htmlFor="feedback-text" className="block text-sm font-medium text-gray-900 mb-2">
-          Your Feedback
-        </label>
+      {/* Editor Block */}
+      <div className="relative group flex-1 flex flex-col min-h-[120px]">
         <textarea
           id="feedback-text"
           value={text}
@@ -74,44 +74,39 @@ export default function TextFeedbackInput({ publicToken, onSuccess }: TextFeedba
             setText(e.target.value);
             setError(null);
           }}
-          placeholder="Share your thoughts, suggestions, or concerns..."
-          rows={8}
-          className={`w-full px-4 py-3 rounded-xl border ${
-            error
-              ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-              : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'
-          } bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors resize-none text-base`}
+          placeholder="Start typing your feedback here…"
+          className={`flex-1 w-full px-4 py-3 rounded-[16px] border-[1.5px] transition-all duration-300 resize-none
+            ${error
+              ? 'border-red-300 bg-red-50/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
+              : 'border-slate-200 bg-slate-50 hover:bg-white focus:bg-white focus:border-[#44bea9] focus:ring-4 focus:ring-[#44bea9]/10'}
+            text-slate-900 placeholder:text-slate-400 text-[16px] leading-relaxed shadow-sm`}
           disabled={isSubmitting}
         />
-        
+
         {/* Character Counter */}
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex items-center justify-between mt-3 px-1">
           <div className="flex items-center gap-2">
             {charCount < minChars && charCount > 0 && (
-              <span className="text-xs text-[#b45309] flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                {minChars - charCount} more characters needed
+              <span className="text-[13px] font-medium text-amber-600 flex items-center gap-1.5 animate-fade-up">
+                <AlertCircle className="w-3.5 h-3.5" />
+                {minChars - charCount} more needed
               </span>
             )}
           </div>
-          <span className={`text-sm font-medium ${
-            charCount > maxChars
-              ? 'text-red-600'
-              : charCount >= minChars
-              ? 'text-green-600'
-              : 'text-gray-500'
-          }`}>
-            {charCount} / {maxChars}
+          <span className={`text-[13px] font-bold tracking-wide transition-colors ${charCount > maxChars ? 'text-red-500' :
+            charCount >= minChars ? 'text-[#44bea9]' : 'text-slate-300'
+            }`}>
+            {charCount}/{maxChars}
           </span>
         </div>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
+        <div className="bg-red-50 border border-red-200 rounded-[14px] p-3 animate-fade-up">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-red-500" />
+            <p className="text-[14px] font-medium text-red-700">{error}</p>
           </div>
         </div>
       )}
@@ -120,29 +115,24 @@ export default function TextFeedbackInput({ publicToken, onSuccess }: TextFeedba
       <button
         type="submit"
         disabled={!isValid || isSubmitting}
-        className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 text-base md:text-lg shadow-md hover:shadow-lg ${
-          !isValid || isSubmitting
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : 'bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 active:scale-[0.98]'
-        }`}
+        className={`w-full py-3.5 px-6 rounded-[16px] font-bold tracking-wide text-white transition-all duration-300 flex items-center justify-center gap-2.5 text-[15px] shadow-md shrink-0
+          ${(!isValid || isSubmitting)
+            ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+            : 'bg-slate-900 hover:bg-slate-800 hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0 active:scale-[0.98]'
+          }`}
       >
         {isSubmitting ? (
           <>
-            <Loader2 className="w-5 h-5 animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
-            <span>Submitting...</span>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Sending...
           </>
         ) : (
           <>
-            <Send className="w-5 h-5" />
-            <span>Submit Feedback</span>
+            Send Feedback
+            <Send className="w-4 h-4 ml-1" />
           </>
         )}
       </button>
-
-      {/* Privacy Note */}
-      <p className="text-xs text-center text-gray-500">
-        Your feedback is anonymous and will be used to improve future events.
-      </p>
     </form>
   );
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
-import { Loader2, MessageSquare, Mic } from 'lucide-react';
+import { Activity, MessageSquare, Mic, AlertCircle } from 'lucide-react';
 import TextFeedbackInput from '@/components/feedback/TextFeedbackInput';
 import VoiceFeedbackInput from '@/components/feedback/VoiceFeedbackInput';
 import SuccessModal from '@/components/feedback/SuccessModal';
@@ -41,45 +41,41 @@ export default function PublicFeedbackPage() {
     }
   };
 
-  const handleSuccess = () => {
-    setShowSuccess(true);
-  };
-
+  const handleSuccess = () => setShowSuccess(true);
   const handleSubmitAnother = () => {
     setShowSuccess(false);
     setMode('text');
   };
 
+  // ── Loading State ──
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" style={{ animation: 'spin 1s linear infinite' }} />
-          <p className="text-gray-600 font-semibold text-base">Loading event...</p>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="relative flex items-center justify-center mb-6">
+          <span className="absolute w-16 h-16 rounded-[18px] bg-[#44bea9]/20 animate-ping" style={{ animationDuration: '1.6s' }} />
+          <span className="absolute w-14 h-14 rounded-[16px] bg-[#44bea9]/10" />
+          <div className="relative w-12 h-12 bg-gradient-to-br from-[#44bea9] to-[#328f7f] rounded-[13px] flex items-center justify-center shadow-lg border border-[#44bea9]/20">
+            <Activity className="w-6 h-6 text-white" />
+          </div>
         </div>
+        <p className="text-slate-500 font-medium tracking-wide">Loading event details…</p>
       </div>
     );
   }
 
+  // ── Error State ──
   if (error || !eventInfo) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-lg">
-          <div className="w-16 h-16 bg-red-50 border border-red-200 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-[24px] border border-slate-100 p-8 text-center shadow-xl shadow-slate-200/50">
+          <div className="w-16 h-16 bg-red-50 border border-red-100 rounded-[16px] flex items-center justify-center mx-auto mb-5">
+            <AlertCircle className="w-8 h-8 text-red-500" />
           </div>
-          <h2
-            className="text-2xl font-bold text-gray-900 mb-2"
-            style={{ letterSpacing: '-0.02em' }}
-          >
-            Event Not Found
-          </h2>
-          <p className="text-gray-600 mb-6 text-[15px]">{error}</p>
+          <h2 className="text-[22px] font-bold text-slate-900 mb-2 tracking-tight">Event Not Found</h2>
+          <p className="text-slate-500 mb-8 text-[15px] leading-relaxed">{error}</p>
           <button
             onClick={fetchEventInfo}
-            className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-all shadow-md hover:shadow-lg"
+            className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-[14px] font-semibold transition-all active:scale-[0.98] shadow-md"
           >
             Try Again
           </button>
@@ -88,70 +84,83 @@ export default function PublicFeedbackPage() {
     );
   }
 
+  // ── Main Feedback Page ──
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-blue-100 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <h1
-            className="text-4xl md:text-5xl font-bold text-gray-900 mb-3"
-            style={{ letterSpacing: '-0.03em' }}
-          >
+    <div className="h-[100dvh] w-full overflow-hidden flex flex-col bg-[#f8fafc] text-slate-900 selection:bg-[#44bea9]/20">
+
+      {/* Decorative Background Elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden flex justify-center">
+        <div className="absolute top-[-10%] w-[800px] h-[400px] bg-[#44bea9]/5 blur-[100px] rounded-full" />
+      </div>
+
+      {/* Branded Header */}
+      <header className="relative z-10 pt-8 pb-4 px-6 flex justify-center">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-[#44bea9] to-[#328f7f] rounded-[8px] flex items-center justify-center shadow-sm">
+            <Activity className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-[17px] font-bold tracking-tight text-slate-800">Ripple</span>
+        </div>
+      </header>
+
+      <main className="relative z-10 flex-1 flex flex-col justify-center w-full max-w-2xl mx-auto px-4 pb-4 animate-fade-up">
+
+        {/* Event Info Card */}
+        <div className="text-center mb-6">
+          <h1 className="text-[28px] sm:text-[36px] font-extrabold tracking-tight text-slate-900 mb-2 leading-[1.1]">
             {eventInfo.title}
           </h1>
           {eventInfo.description && (
-            <p className="text-gray-600 text-base md:text-[17px] font-medium">
+            <p className="text-[14px] sm:text-[15px] text-slate-500 max-w-lg mx-auto leading-relaxed line-clamp-2">
               {eventInfo.description}
             </p>
           )}
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Mode Toggle */}
-        <div className="flex gap-3 mb-8 p-2 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200 shadow-sm">
-          <button
-            onClick={() => setMode('text')}
-            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-lg font-semibold transition-all ${
-              mode === 'text'
-                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
-            }`}
-          >
-            <MessageSquare className="w-5 h-5" />
-            <span className="text-sm md:text-base">Text Feedback</span>
-          </button>
-          <button
-            onClick={() => setMode('voice')}
-            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-lg font-semibold transition-all ${
-              mode === 'voice'
-                ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'
-            }`}
-          >
-            <Mic className="w-5 h-5" />
-            <span className="text-sm md:text-base">Voice Feedback</span>
-          </button>
+        {/* Action Card */}
+        <div className="bg-white rounded-[28px] p-2 shadow-xl shadow-slate-200/40 border border-slate-100/80 ring-1 ring-slate-900/5 flex flex-col max-h-full">
+
+          {/* Segmented Control */}
+          <div className="flex p-1.5 bg-slate-100/80 rounded-[22px] mb-4 shrink-0">
+            <button
+              onClick={() => setMode('text')}
+              className={`flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-[20px] text-[15px] font-semibold transition-all duration-300 ${mode === 'text'
+                ? 'bg-white text-[#44bea9] shadow-sm ring-1 ring-slate-900/5'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                }`}
+            >
+              <MessageSquare className={`w-4 h-4 ${mode === 'text' ? 'text-[#44bea9]' : 'text-slate-400'}`} />
+              Written
+            </button>
+            <button
+              onClick={() => setMode('voice')}
+              className={`flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-[20px] text-[15px] font-semibold transition-all duration-300 ${mode === 'voice'
+                ? 'bg-white text-[#44bea9] shadow-sm ring-1 ring-slate-900/5'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                }`}
+            >
+              <Mic className={`w-4 h-4 ${mode === 'voice' ? 'text-[#44bea9]' : 'text-slate-400'}`} />
+              Voice
+            </button>
+          </div>
+
+          <div className="p-3 sm:p-5 pt-0 flex-1 overflow-y-auto min-h-0">
+            {mode === 'text' ? (
+              <TextFeedbackInput publicToken={public_token} onSuccess={handleSuccess} />
+            ) : (
+              <VoiceFeedbackInput publicToken={public_token} onSuccess={handleSuccess} />
+            )}
+          </div>
         </div>
 
-        {/* Input Component */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8 shadow-lg">
-          {mode === 'text' ? (
-            <TextFeedbackInput
-              publicToken={public_token}
-              onSuccess={handleSuccess}
-            />
-          ) : (
-            <VoiceFeedbackInput
-              publicToken={public_token}
-              onSuccess={handleSuccess}
-            />
-          )}
+        {/* Footer */}
+        <div className="mt-6 text-center shrink-0">
+          <p className="text-[12px] text-slate-400 font-medium">
+            Your feedback is anonymous and helps us improve.
+          </p>
         </div>
-      </div>
+      </main>
 
-      {/* Success Modal */}
       <SuccessModal
         isOpen={showSuccess}
         onClose={() => setShowSuccess(false)}

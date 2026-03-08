@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import api from '@/utils/api';
 import type { EventCreate } from '@/types/api';
@@ -22,6 +22,17 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
   const [errors, setErrors] = useState<Partial<Record<keyof EventCreate, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Listen for Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const validateForm = (): boolean => {
@@ -39,10 +50,28 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
       newErrors.description = 'Description must not exceed 500 characters';
     }
 
+    if (!formData.event_date) {
+      newErrors.event_date = 'Event date is required';
+    }
+
+    if (!formData.feedback_open_at) {
+      newErrors.feedback_open_at = 'Opening time is required';
+    }
+
+    if (!formData.feedback_close_at) {
+      newErrors.feedback_close_at = 'Closing time is required';
+    }
+
+    if (formData.event_date && formData.feedback_open_at) {
+      if (formData.feedback_open_at < formData.event_date) {
+        newErrors.feedback_open_at = 'Feedback cannot open before the event date';
+      }
+    }
+
     if (formData.feedback_open_at && formData.feedback_close_at) {
       const openAt = new Date(formData.feedback_open_at);
       const closeAt = new Date(formData.feedback_close_at);
-      
+
       if (closeAt <= openAt) {
         newErrors.feedback_close_at = 'Closing time must be after opening time';
       }
@@ -69,7 +98,7 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
       };
 
       await api.post('/events/', payload);
-      
+
       // Reset form
       setFormData({ title: '', description: '', event_date: '', feedback_open_at: '', feedback_close_at: '' });
       setErrors({});
@@ -92,37 +121,34 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl border border-gray-200 max-w-lg w-full p-8 animate-in zoom-in duration-300 shadow-xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300"
+      onClick={handleClose}
+    >
+      <div
+        className="bg-card-bg border border-card-border rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-fade-up"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2
-            style={{ fontSize: '24px', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}
-          >
-            Create New Event
-          </h2>
+        <div className="flex items-center justify-between p-6 border-b border-card-border/50">
+          <div className="flex items-center gap-3">
+            <h2 className="text-[24px] font-bold text-fg tracking-tight">Create New Event</h2>
+          </div>
           <button
             onClick={handleClose}
+            className="p-2 rounded-lg transition-colors text-fg-secondary hover:text-fg hover:bg-hover-overlay"
             disabled={isSubmitting}
-            className="p-2 rounded-xl transition-colors disabled:opacity-50"
-            style={{ color: '#9CA3AF' }}
-            onMouseEnter={(e) => !isSubmitting && (e.currentTarget.style.color = '#6B7280')}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-180px)]">
           {/* Title */}
           <div>
-            <label
-              htmlFor="title"
-              className="block mb-2"
-              style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}
-            >
-              Event Title <span style={{ color: '#EF4444' }}>*</span>
+            <label className="block mb-2 text-[14px] font-semibold text-fg-secondary">
+              Event Title <span className="text-danger">*</span>
             </label>
             <input
               id="title"
@@ -133,32 +159,20 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
                 setErrors({ ...errors, title: undefined });
               }}
               placeholder="Annual Conference 2026"
-              className="w-full px-4 py-3 rounded-xl transition-colors"
-              style={{
-                background: '#FFFFFF',
-                border: errors.title ? '2px solid #EF4444' : '1px solid #D1D5DB',
-                color: '#111827',
-                fontSize: '15px'
-              }}
-              onFocus={(e) => !errors.title && (e.target.style.border = '2px solid #6366F1')}
-              onBlur={(e) => !errors.title && (e.target.style.border = '1px solid #D1D5DB')}
+              className={`w-full px-4 py-3 rounded-lg transition-colors bg-bg text-fg text-[15px] outline-none border ${errors.title ? 'border-danger' : 'border-card-border/50 hover:border-accent/50 focus:border-accent'}`}
               disabled={isSubmitting}
             />
             {errors.title && (
-              <p className="mt-1" style={{ fontSize: '13px', color: '#EF4444' }}>{errors.title}</p>
+              <p className="mt-1 text-[13px] text-danger">{errors.title}</p>
             )}
-            <p className="mt-1" style={{ fontSize: '12px', color: '#9CA3AF' }}>
+            <p className="mt-1 text-[12px] text-fg-secondary/70">
               {formData.title.length}/100 characters
             </p>
           </div>
 
           {/* Description */}
           <div>
-            <label
-              htmlFor="description"
-              className="block mb-2"
-              style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}
-            >
+            <label className="block mb-2 text-[14px] font-semibold text-fg-secondary">
               Description (Optional)
             </label>
             <textarea
@@ -169,68 +183,50 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
                 setErrors({ ...errors, description: undefined });
               }}
               placeholder="Brief description of your event..."
-              rows={4}
-              className="w-full px-4 py-3 rounded-xl transition-colors resize-none"
-              style={{
-                background: '#FFFFFF',
-                border: errors.description ? '2px solid #EF4444' : '1px solid #D1D5DB',
-                color: '#111827',
-                fontSize: '15px'
-              }}
-              onFocus={(e) => !errors.description && (e.target.style.border = '2px solid #6366F1')}
-              onBlur={(e) => !errors.description && (e.target.style.border = '1px solid #D1D5DB')}
+              rows={3}
+              className={`w-full px-4 py-3 rounded-lg transition-colors resize-none bg-bg text-fg text-[15px] outline-none border ${errors.description ? 'border-danger' : 'border-card-border/50 hover:border-accent/50 focus:border-accent'}`}
               disabled={isSubmitting}
             />
             {errors.description && (
-              <p className="mt-1" style={{ fontSize: '13px', color: '#EF4444' }}>{errors.description}</p>
+              <p className="mt-1 text-[13px] text-danger">{errors.description}</p>
             )}
-            <p className="mt-1" style={{ fontSize: '12px', color: '#9CA3AF' }}>
+            <p className="mt-1 text-[12px] text-fg-secondary/70">
               {formData.description?.length || 0}/500 characters
             </p>
           </div>
 
           {/* Event Date */}
           <div>
-            <label
-              htmlFor="event_date"
-              className="block mb-2"
-              style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}
-            >
-              Event Date (Optional)
+            <label className="block mb-2 text-[14px] font-semibold text-fg-secondary">
+              Event Date <span className="text-danger">*</span>
             </label>
             <input
               id="event_date"
               type="date"
               value={formData.event_date}
               onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl transition-colors"
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid #D1D5DB',
-                color: '#111827',
-                fontSize: '15px'
-              }}
-              onFocus={(e) => e.target.style.border = '2px solid #6366F1'}
-              onBlur={(e) => e.target.style.border = '1px solid #D1D5DB'}
+              className={`w-full px-4 py-3 rounded-lg transition-colors bg-bg text-fg text-[15px] outline-none border ${errors.event_date ? 'border-danger' : 'border-card-border/50 hover:border-accent/50 focus:border-accent'}`}
               disabled={isSubmitting}
             />
+            {errors.event_date && (
+              <p className="mt-1 text-[13px] text-danger">{errors.event_date}</p>
+            )}
           </div>
 
           {/* Feedback Collection Period */}
-          <div className="space-y-4 p-4 rounded-xl" style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
-            <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>
-              Feedback Collection Period (Optional)
+          <div className="p-5 rounded-lg bg-bg-secondary border border-card-border/50">
+            <h3 className="mb-2 text-[14px] font-semibold text-fg">
+              Feedback Collection Period
+            </h3>
+            <p className="mb-5 text-[13px] text-fg-secondary">
+              Set when attendees can submit feedback.
             </p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Feedback Open At */}
               <div>
-                <label
-                  htmlFor="feedback_open_at"
-                  className="block mb-2"
-                  style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}
-                >
-                  Opens At
+                <label className="block mb-2 text-[13px] font-semibold text-fg-secondary">
+                  Opens At <span className="text-danger">*</span>
                 </label>
                 <input
                   id="feedback_open_at"
@@ -238,29 +234,20 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
                   value={formData.feedback_open_at}
                   onChange={(e) => {
                     setFormData({ ...formData, feedback_open_at: e.target.value });
-                    setErrors({ ...errors, feedback_close_at: undefined });
+                    setErrors({ ...errors, feedback_open_at: undefined });
                   }}
-                  className="w-full px-4 py-3 rounded-xl transition-colors"
-                  style={{
-                    background: '#FFFFFF',
-                    border: '1px solid #D1D5DB',
-                    color: '#111827',
-                    fontSize: '14px'
-                  }}
-                  onFocus={(e) => e.target.style.border = '2px solid #6366F1'}
-                  onBlur={(e) => e.target.style.border = '1px solid #D1D5DB'}
+                  className={`w-full px-3 py-2.5 rounded-lg transition-colors bg-bg text-fg text-[14px] outline-none border ${errors.feedback_open_at ? 'border-danger' : 'border-card-border/50 hover:border-accent/50 focus:border-accent'}`}
                   disabled={isSubmitting}
                 />
+                {errors.feedback_open_at && (
+                  <p className="mt-1 text-[12px] text-danger">{errors.feedback_open_at}</p>
+                )}
               </div>
 
               {/* Feedback Close At */}
               <div>
-                <label
-                  htmlFor="feedback_close_at"
-                  className="block mb-2"
-                  style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}
-                >
-                  Closes At
+                <label className="block mb-2 text-[13px] font-semibold text-fg-secondary">
+                  Closes At <span className="text-danger">*</span>
                 </label>
                 <input
                   id="feedback_close_at"
@@ -270,67 +257,44 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
                     setFormData({ ...formData, feedback_close_at: e.target.value });
                     setErrors({ ...errors, feedback_close_at: undefined });
                   }}
-                  className="w-full px-4 py-3 rounded-xl transition-colors"
-                  style={{
-                    background: '#FFFFFF',
-                    border: errors.feedback_close_at ? '2px solid #EF4444' : '1px solid #D1D5DB',
-                    color: '#111827',
-                    fontSize: '14px'
-                  }}
-                  onFocus={(e) => !errors.feedback_close_at && (e.target.style.border = '2px solid #6366F1')}
-                  onBlur={(e) => !errors.feedback_close_at && (e.target.style.border = '1px solid #D1D5DB')}
+                  className={`w-full px-3 py-2.5 rounded-lg transition-colors bg-bg text-fg text-[14px] outline-none border ${errors.feedback_close_at ? 'border-danger' : 'border-card-border/50 hover:border-accent/50 focus:border-accent'}`}
                   disabled={isSubmitting}
                 />
                 {errors.feedback_close_at && (
-                  <p className="mt-1" style={{ fontSize: '13px', color: '#EF4444' }}>{errors.feedback_close_at}</p>
+                  <p className="mt-1 text-[12px] text-danger">{errors.feedback_close_at}</p>
                 )}
               </div>
             </div>
-            
-            <p style={{ fontSize: '13px', color: '#6B7280' }}>
-              Set when attendees can submit feedback. If not set, feedback will be open indefinitely.
-            </p>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={isSubmitting}
-              className="flex-1 py-3 px-4 rounded-xl font-semibold transition-colors disabled:opacity-50"
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid #D1D5DB',
-                color: '#374151'
-              }}
-              onMouseEnter={(e) => !isSubmitting && (e.currentTarget.style.background = '#F9FAFB')}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !formData.title.trim()}
-              className="flex-1 py-3 px-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
-              style={{
-                background: (isSubmitting || !formData.title.trim()) ? '#9CA3AF' : '#6366F1',
-                color: '#FFFFFF'
-              }}
-              onMouseEnter={(e) => !(isSubmitting || !formData.title.trim()) && (e.currentTarget.style.background = '#4F46E5')}
-              onMouseLeave={(e) => !(isSubmitting || !formData.title.trim()) && (e.currentTarget.style.background = '#6366F1')}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
-                  Creating...
-                </>
-              ) : (
-                'Create Event'
-              )}
-            </button>
-          </div>
         </form>
+
+        {/* Footer */}
+        <div className="flex gap-3 p-6 border-t border-card-border/50 bg-bg-secondary/50">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex-1 px-4 py-3 rounded-xl font-semibold transition-colors bg-bg border border-card-border hover:bg-hover-overlay text-fg-secondary hover:text-fg disabled:opacity-50"
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            onClick={handleSubmit}
+            disabled={isSubmitting || !formData.title.trim()}
+            className="flex-1 px-4 py-3 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg hover:shadow-accent/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 bg-accent text-white hover:bg-accent/90"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              'Create Event'
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

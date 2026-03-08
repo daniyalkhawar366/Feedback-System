@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Mic, Square, Play, Trash2, Send, Loader2, AlertCircle } from 'lucide-react';
+import { Mic, Square, Play, Trash2, Send, Loader2, AlertCircle, PlayCircle, PauseCircle } from 'lucide-react';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { API_BASE_URL } from '@/utils/api';
 import type { FeedbackResponse } from '@/types/api';
@@ -15,7 +15,7 @@ interface VoiceFeedbackInputProps {
 export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeedbackInputProps) {
   const maxDuration = 300; // 5 minutes
   const minDuration = 2; // 2 seconds
-  
+
   const {
     isRecording,
     duration,
@@ -31,7 +31,7 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
-  
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleStartRecording = async () => {
@@ -47,7 +47,6 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
 
   const handlePlayPause = () => {
     if (!audioRef.current) return;
-
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
@@ -59,7 +58,6 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
 
   const handleSubmit = async () => {
     if (!audioBlob) return;
-
     if (duration < minDuration) {
       setError(`Recording too short. Minimum ${minDuration} seconds required.`);
       return;
@@ -75,11 +73,7 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
       await axios.post<FeedbackResponse>(
         `${API_BASE_URL}/feedback/${publicToken}/audio`,
         formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
+        { headers: { 'Content-Type': 'multipart/form-data' } }
       );
 
       deleteRecording();
@@ -97,202 +91,176 @@ export default function VoiceFeedbackInput({ publicToken, onSuccess }: VoiceFeed
       audioRef.current.addEventListener('ended', () => setIsPlaying(false));
     }
     return () => {
-      if (audioRef.current) {
-        audioRef.current.removeEventListener('ended', () => setIsPlaying(false));
-      }
+      if (audioRef.current) audioRef.current.removeEventListener('ended', () => setIsPlaying(false));
     };
   }, [audioURL]);
 
   return (
-    <div className="space-y-6">
-      {/* Instructions */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <p className="text-sm text-gray-900 flex items-start gap-2">
-          <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-          </svg>
-          <span>
-            Record your voice feedback (2 seconds minimum, 5 minutes maximum). You can review before submitting.
-          </span>
-        </p>
-      </div>
+    <div className="flex flex-col gap-4 animate-fade-up h-full justify-between">
+      {/* Friendly Instruction Callout */}
+      {!isRecording && !audioBlob && (
+        <div className="bg-[#44bea9]/10 border border-[#44bea9]/20 rounded-[14px] p-3 flex gap-3 shrink-0">
+          <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm text-[#44bea9]">
+            <Mic className="w-3.5 h-3.5" />
+          </div>
+          <div className="pt-0.5">
+            <p className="text-[13.5px] font-medium text-[#2d7d6f] leading-snug">
+              Share via voice recording.
+            </p>
+            <p className="text-[12.5px] text-[#328f7f]/80 mt-0.5 leading-relaxed">
+              Tap the microphone to begin. You can review your recording before sending it.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Permission Denied Error */}
       {permissionDenied && (
-        <div className="bg-[#fef7ed] border border-[#f0c8a0] rounded-xl p-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-[#b45309] flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-[#92400e] mb-2">Microphone Access Required</p>
-              <p className="text-xs text-[#78350f]">
-                Please allow microphone access in your browser settings and try again.
+              <p className="text-[14.5px] font-bold text-amber-900 mb-1 tracking-tight">Microphone Access Needed</p>
+              <p className="text-[13.5px] text-amber-700/90 leading-relaxed">
+                Please allow microphone access in your browser settings to record audio feedback.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Recording Interface */}
-      <div className="flex flex-col items-center justify-center py-12">
+      {/* Interactive Recording Area */}
+      <div className="flex flex-col items-center justify-center py-2 px-4 flex-1">
+
+        {/* State 1: Ready to Record */}
         {!isRecording && !audioBlob && (
-          <div className="text-center">
+          <div className="text-center flex flex-col items-center">
             <button
               onClick={handleStartRecording}
               disabled={isSubmitting}
-              className="group relative mb-6"
+              className="group relative mb-6 outline-none"
             >
-              <div className="w-32 h-32 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center transition-transform active:scale-95 group-hover:scale-105 border-4 border-indigo-200 shadow-lg">
-                <Mic className="w-16 h-16 text-white" />
+              {/* Pulsing ring behind */}
+              <div className="absolute inset-[-10px] rounded-full bg-[#44bea9] opacity-20 animate-ping" style={{ animationDuration: '2s' }} />
+              {/* Outer stroke */}
+              <div className="absolute inset-[-4px] rounded-full border-[3px] border-[#44bea9]/30 transition-transform group-hover:scale-105" />
+              {/* Inner button */}
+              <div className="relative w-20 h-20 bg-gradient-to-b from-[#44bea9] to-[#328f7f] rounded-full flex items-center justify-center transition-transform active:scale-95 shadow-xl shadow-[#44bea9]/30">
+                <Mic className="w-8 h-8 text-white" fill="currentColor" strokeWidth={1} />
               </div>
-              <div className="absolute inset-0 rounded-full bg-indigo-500 animate-ping opacity-10"></div>
             </button>
-            <p
-              className="text-lg font-bold text-gray-900 mb-2"
-              style={{ letterSpacing: '-0.02em' }}
-            >
-              Tap to Start Recording
-            </p>
-            <p className="text-sm text-gray-600">
-              Maximum duration: {formatDuration(maxDuration)}
-            </p>
+            <p className="text-[16px] font-extrabold text-slate-800 tracking-tight">Tap to Start Recording</p>
+            <p className="text-[13px] font-medium text-slate-400 mt-1">Up to {formatDuration(maxDuration)} limit</p>
           </div>
         )}
 
+        {/* State 2: Actively Recording */}
         {isRecording && (
-          <div className="text-center">
-            {/* Recording Animation */}
-            <div className="relative mb-6">
-              <div className="w-32 h-32 bg-red-600 rounded-full flex items-center justify-center animate-pulse border-4 border-red-200 shadow-lg">
-                <Mic className="w-16 h-16 text-white" />
-              </div>
-              <div className="absolute inset-0 rounded-full border-4 border-red-600 animate-ping opacity-30"></div>
-            </div>
-
-            {/* Timer */}
-            <div className="text-4xl font-bold text-gray-900 mb-2 font-mono">
+          <div className="text-center w-full max-w-sm animate-in fade-in zoom-in duration-300">
+            <div className="text-[40px] font-bold text-slate-900 font-mono tracking-tighter mb-4 tabular-nums">
               {formatDuration(duration)}
             </div>
-            <p className="text-sm text-gray-600 mb-6">
-              Recording... ({formatDuration(maxDuration - duration)} remaining)
-            </p>
 
-            {/* Waveform Visual */}
-            <div className="flex items-center justify-center gap-1 mb-6">
-              {[...Array(20)].map((_, i) => (
+            {/* Visualizer bars */}
+            <div className="flex items-center justify-center gap-[3px] mb-8 h-12">
+              {[...Array(24)].map((_, i) => (
                 <div
                   key={i}
-                  className="w-1 bg-red-600 rounded-full animate-pulse"
+                  className="w-1.5 bg-[#44bea9] rounded-full animate-pulse"
                   style={{
-                    height: `${Math.random() * 40 + 20}px`,
+                    height: `${Math.random() * 80 + 20}%`,
                     animationDelay: `${i * 0.05}s`,
+                    animationDuration: '0.4s'
                   }}
                 />
               ))}
             </div>
 
-            {/* Stop Button */}
             <button
               onClick={stopRecording}
-              className="px-8 py-4 bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black text-white rounded-xl font-semibold flex items-center gap-2 mx-auto transition-all shadow-md hover:shadow-lg"
+              className="w-12 h-12 bg-white border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-900 rounded-full flex items-center justify-center mx-auto transition-all shadow-md active:scale-95"
+              aria-label="Stop Recording"
             >
-              <Square className="w-5 h-5" />
-              Stop Recording
+              <Square className="w-4 h-4 fill-current" />
             </button>
+            <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mt-4">Stop</p>
           </div>
         )}
 
+        {/* State 3: Review & Submit */}
         {!isRecording && audioBlob && (
-          <div className="w-full max-w-md">
-            {/* Audio Player */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-6 mb-4 shadow-sm">
+          <div className="w-full max-w-sm animate-in slide-in-from-bottom-4 duration-400 flex flex-col justify-between h-full">
+            {/* Playback Box */}
+            <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm p-4 mb-2">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 mb-1">Recording Ready</p>
-                  <p className="text-xs text-gray-600">Duration: {formatDuration(duration)}</p>
+                  <p className="text-[14px] font-bold text-slate-900 tracking-tight">Recording Ready</p>
+                  <p className="text-[12px] font-medium text-slate-500">{formatDuration(duration)} duration</p>
                 </div>
                 <button
                   onClick={handlePlayPause}
-                  className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 rounded-full flex items-center justify-center text-white transition-all shadow-md hover:shadow-lg"
+                  className="w-8 h-8 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-full flex items-center justify-center transition-colors shadow-sm"
                 >
-                  {isPlaying ? <Square className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+                  {isPlaying ? <PauseCircle className="w-5 h-5" /> : <PlayCircle className="w-5 h-5" />}
                 </button>
               </div>
 
-              {/* Hidden audio element */}
-              {audioURL && (
-                <audio ref={audioRef} src={audioURL} className="hidden" />
-              )}
+              {audioURL && <audio ref={audioRef} src={audioURL} className="hidden" />}
 
-              {/* Waveform visualization (static) */}
-              <div className="flex items-center gap-0.5 h-12 bg-white rounded-lg px-2 border border-blue-200">
-                {[...Array(50)].map((_, i) => (
+              {/* Static Waveform */}
+              <div className="flex items-center gap-[2px] h-8 w-full rounded-lg overflow-hidden opacity-50">
+                {[...Array(40)].map((_, i) => (
                   <div
                     key={i}
-                    className="flex-1 bg-indigo-500 rounded-full"
-                    style={{
-                      height: `${Math.random() * 70 + 30}%`,
-                    }}
+                    className="flex-1 bg-slate-300 rounded-full"
+                    style={{ height: `${Math.random() * 80 + 20}%` }}
                   />
                 ))}
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3">
+            {duration < minDuration && (
+              <div className="mb-2 bg-amber-50 rounded-[12px] p-3 border border-amber-200">
+                <p className="text-[13.5px] font-semibold text-amber-700 text-center">
+                  Recording is too short (minimum {minDuration}s).
+                </p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3 mt-auto pt-2">
               <button
                 onClick={deleteRecording}
                 disabled={isSubmitting}
-                className="flex-1 py-4 px-6 bg-white hover:bg-gray-50 text-gray-700 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors border-2 border-gray-300 shadow-sm"
+                className="w-12 shrink-0 h-12 bg-white border border-slate-200 hover:bg-red-50 hover:text-red-500 hover:border-red-200 text-slate-500 rounded-[14px] flex items-center justify-center transition-all shadow-sm active:-translate-y-px disabled:opacity-50"
               >
-                <Trash2 className="w-5 h-5" />
-                Delete
+                <Trash2 className="w-4 h-4" />
               </button>
+
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || duration < minDuration}
-                className={`flex-1 py-4 px-6 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg ${
-                  isSubmitting || duration < minDuration
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white active:scale-[0.98]'
-                }`}
+                className={`flex-1 h-12 rounded-[16px] font-bold tracking-wide transition-all shadow-md flex items-center justify-center gap-2 text-[14px]
+                  ${(isSubmitting || duration < minDuration)
+                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white active:scale-[0.98] hover:shadow-xl hover:-translate-y-0.5'}`}
               >
                 {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
-                    Submitting...
-                  </>
+                  <><Loader2 className="w-4 h-4 animate-spin" />Sending...</>
                 ) : (
-                  <>
-                    <Send className="w-5 h-5" />
-                    Submit
-                  </>
+                  <>Send Feedback <Send className="w-3.5 h-3.5 ml-1" /></>
                 )}
               </button>
             </div>
-
-            {duration < minDuration && (
-              <p className="text-xs text-[#b45309] text-center mt-2">
-                Recording too short. Minimum {minDuration} seconds required.
-              </p>
-            )}
           </div>
         )}
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
+      {error && !permissionDenied && (
+        <div className="bg-red-50 border border-red-200 rounded-[16px] p-4 text-center mt-4">
+          <p className="text-[14px] font-medium text-red-600">{error}</p>
         </div>
       )}
-
-      {/* Privacy Note */}
-      <p className="text-xs text-center text-gray-500">
-        Your voice recording is anonymous and will be transcribed for analysis.
-      </p>
     </div>
   );
 }

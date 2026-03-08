@@ -82,50 +82,42 @@ export const LoginForm: React.FC<LoginFormProps> = ({
      */
     <div
       style={{
-        minHeight: '100vh',
-        background: '#F9FAFB',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '40px 16px',
+        width: '100%',
       }}
     >
       {/* ── Brand mark ── */}
-      <div style={{ marginBottom: 32, textAlign: 'center' }}>
+      <div style={{ marginBottom: 24, textAlign: 'center' }}>
         <div
           style={{
-            width: 40,
-            height: 40,
-            background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
-            borderRadius: 10,
+            width: 48,
+            height: 48,
+            background: 'linear-gradient(135deg, #44bea9 0%, #2b8c7c 100%)',
+            borderRadius: 12,
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: 16,
-            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+            marginBottom: 12,
+            boxShadow: '0 4px 12px rgba(68, 190, 169, 0.3)',
           }}
         >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 12c-2.66 0-4-3-4-3s-1.34 3-4 3-4-3-4-3-1.34 3-4 3" />
           </svg>
         </div>
         <div
           style={{
-            fontSize: 28,
+            fontSize: 32,
             fontWeight: 700,
             color: '#111827',
-            letterSpacing: '-0.03em',
+            letterSpacing: '-0.04em',
             lineHeight: 1.1,
           }}
         >
-          Intelligent Feedback
-        </div>
-        <div style={{ fontSize: 15, color: '#6B7280', marginTop: 6, fontWeight: 400 }}>
-          Share your voice, shape the future
+          Ripple
         </div>
       </div>
 
@@ -133,12 +125,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <div
         style={{
           width: '100%',
-          maxWidth: 440,
-          background: '#FFFFFF',
-          border: '1px solid #E5E7EB',
-          borderRadius: 16,
-          padding: '40px 32px',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+          maxWidth: 400,
+          background: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255, 255, 255, 0.5)',
+          borderRadius: 20,
+          padding: '32px 28px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)',
         }}
       >
         {/* Card header */}
@@ -251,19 +244,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 background: 'none',
                 border: 'none',
                 padding: 0,
-                fontSize: 14,
-                color: '#6366F1',
-                fontWeight: 500,
+                fontSize: 13,
+                color: '#44bea9',
+                fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'color 0.15s',
                 textDecoration: 'none',
               }}
               onMouseEnter={e => {
-                (e.currentTarget as HTMLButtonElement).style.color = '#4F46E5';
+                (e.currentTarget as HTMLButtonElement).style.color = '#2b8c7c';
                 (e.currentTarget as HTMLButtonElement).style.textDecoration = 'underline';
               }}
               onMouseLeave={e => {
-                (e.currentTarget as HTMLButtonElement).style.color = '#6366F1';
+                (e.currentTarget as HTMLButtonElement).style.color = '#44bea9';
                 (e.currentTarget as HTMLButtonElement).style.textDecoration = 'none';
               }}
             >
@@ -279,7 +272,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               marginTop: 4,
               width: '100%',
               padding: '12px 24px',
-              background: isSubmitting ? '#9CA3AF' : '#6366F1',
+              background: isSubmitting ? '#9CA3AF' : '#44bea9',
               color: '#FFFFFF',
               border: 'none',
               borderRadius: 8,
@@ -291,25 +284,35 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               justifyContent: 'center',
               gap: 8,
               transition: 'all 0.2s ease',
-              boxShadow: isSubmitting ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.05)',
+              boxShadow: isSubmitting ? 'none' : '0 4px 6px -1px rgba(68, 190, 169, 0.4), 0 2px 4px -1px rgba(68, 190, 169, 0.2)',
             }}
             onMouseEnter={e => {
               if (!isSubmitting) {
-                (e.currentTarget as HTMLButtonElement).style.background = '#4F46E5';
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                (e.currentTarget as HTMLButtonElement).style.background = '#32a893';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 8px -1px rgba(68, 190, 169, 0.5), 0 4px 6px -1px rgba(68, 190, 169, 0.3)';
               }
             }}
             onMouseLeave={e => {
               if (!isSubmitting) {
-                (e.currentTarget as HTMLButtonElement).style.background = '#6366F1';
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+                (e.currentTarget as HTMLButtonElement).style.background = '#44bea9';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 6px -1px rgba(68, 190, 169, 0.4), 0 2px 4px -1px rgba(68, 190, 169, 0.2)';
               }
             }}
             onMouseDown={e => {
-              if (!isSubmitting) (e.currentTarget as HTMLButtonElement).style.background = '#4338CA';
+              if (!isSubmitting) {
+                (e.currentTarget as HTMLButtonElement).style.background = '#2b8c7c';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(1px)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 1px 2px -1px rgba(68, 190, 169, 0.5)';
+              }
             }}
             onMouseUp={e => {
-              if (!isSubmitting) (e.currentTarget as HTMLButtonElement).style.background = '#4F46E5';
+              if (!isSubmitting) {
+                (e.currentTarget as HTMLButtonElement).style.background = '#32a893';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 8px -1px rgba(68, 190, 169, 0.5), 0 4px 6px -1px rgba(68, 190, 169, 0.3)';
+              }
             }}
           >
             {isSubmitting ? (
@@ -376,17 +379,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </button>
       </div>
 
-      {/* Footer */}
-      <p style={{ marginTop: 24, fontSize: 12, color: '#9CA3AF', textAlign: 'center', lineHeight: 1.6 }}>
-        By signing in, you agree to our{' '}
-        <a href="#" style={{ color: '#6366F1', fontWeight: 500, textDecoration: 'underline' }}>
-          Terms of Service
-        </a>{' '}
-        and{' '}
-        <a href="#" style={{ color: '#6366F1', fontWeight: 500, textDecoration: 'underline' }}>
-          Privacy Policy
-        </a>
-      </p>
+
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -477,7 +470,7 @@ function FieldInput({
           paddingTop: 12,
           paddingBottom: 12,
           background: '#FFFFFF',
-          border: hasError ? '2px solid #EF4444' : focused ? '2px solid #6366F1' : '1px solid #D1D5DB',
+          border: hasError ? '2px solid #EF4444' : focused ? '2px solid #44bea9' : '1px solid #D1D5DB',
           borderRadius: 8,
           outline: 'none',
           fontSize: 15,
@@ -485,7 +478,7 @@ function FieldInput({
           fontFamily: "'DM Sans', sans-serif",
           fontWeight: 400,
           transition: 'all 0.2s ease',
-          boxShadow: focused ? '0 0 0 3px rgba(99, 102, 241, 0.1)' : 'none',
+          boxShadow: focused ? '0 0 0 3px rgba(68, 190, 169, 0.2)' : 'none',
         }}
       />
       {suffix && (

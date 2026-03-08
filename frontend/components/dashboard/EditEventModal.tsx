@@ -55,6 +55,22 @@ export default function EditEventModal({ isOpen, onClose, onSuccess, event }: Ed
     }
   }, [isOpen, event]);
 
+  // Calculate if the event has started to disable feedback_open_at field
+  const hasEventStarted = event.feedback_open_at
+    ? new Date(event.feedback_open_at) <= new Date()
+    : event.event_date ? new Date(event.event_date) <= new Date() : false;
+
+  // Listen for Escape key to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const validateForm = (): boolean => {
@@ -75,9 +91,15 @@ export default function EditEventModal({ isOpen, onClose, onSuccess, event }: Ed
     if (formData.feedback_open_at && formData.feedback_close_at) {
       const openAt = new Date(formData.feedback_open_at);
       const closeAt = new Date(formData.feedback_close_at);
-      
+
       if (closeAt <= openAt) {
         newErrors.feedback_close_at = 'Closing time must be after opening time';
+      }
+    }
+
+    if (formData.event_date && formData.feedback_open_at) {
+      if (formData.feedback_open_at < formData.event_date) {
+        newErrors.feedback_open_at = 'Feedback cannot open before the event date';
       }
     }
 
@@ -87,7 +109,7 @@ export default function EditEventModal({ isOpen, onClose, onSuccess, event }: Ed
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsSubmitting(true);
@@ -95,7 +117,7 @@ export default function EditEventModal({ isOpen, onClose, onSuccess, event }: Ed
     try {
       // Clean up form data - convert empty strings to null for optional fields
       const cleanedData: any = {};
-      
+
       if (formData.title !== undefined) cleanedData.title = formData.title;
       if (formData.description !== undefined) {
         cleanedData.description = formData.description || null;
@@ -140,23 +162,26 @@ export default function EditEventModal({ isOpen, onClose, onSuccess, event }: Ed
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300"
+      onClick={handleClose}
+    >
+      <div
+        className="bg-card-bg border border-card-border rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-fade-up"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: '#E5E7EB' }}>
+        <div className="flex items-center justify-between p-6 border-b border-card-border/50">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg" style={{ background: '#EEF2FF' }}>
-              <Edit className="w-6 h-6" style={{ color: '#6366F1' }} />
+            <div className="p-2 rounded-lg bg-accent/10">
+              <Edit className="w-6 h-6 text-accent" />
             </div>
-            <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#111827' }}>Edit Event</h2>
+            <h2 className="text-[24px] font-bold text-fg tracking-tight">Edit Event</h2>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 rounded-lg transition-colors"
+            className="p-2 rounded-lg transition-colors text-fg-secondary hover:text-fg hover:bg-hover-overlay"
             disabled={isSubmitting}
-            style={{ color: '#9CA3AF' }}
-            onMouseEnter={(e) => !isSubmitting && (e.currentTarget.style.color = '#6B7280')}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
           >
             <X className="w-6 h-6" />
           </button>
@@ -166,135 +191,98 @@ export default function EditEventModal({ isOpen, onClose, onSuccess, event }: Ed
         <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-180px)]">
           {/* Event Title */}
           <div>
-            <label className="block mb-2" style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>
-              Event Title <span style={{ color: '#EF4444' }}>*</span>
+            <label className="block mb-2 text-[14px] font-semibold text-fg-secondary">
+              Event Title <span className="text-danger">*</span>
             </label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-3 rounded-lg transition-colors"
-              style={{
-                background: '#FFFFFF',
-                border: errors.title ? '2px solid #EF4444' : '1px solid #D1D5DB',
-                color: '#111827',
-                fontSize: '15px'
-              }}
-              onFocus={(e) => !errors.title && (e.target.style.border = '2px solid #6366F1')}
-              onBlur={(e) => !errors.title && (e.target.style.border = '1px solid #D1D5DB')}
+              className={`w-full px-4 py-3 rounded-lg transition-colors bg-bg text-fg text-[15px] outline-none border ${errors.title ? 'border-danger' : 'border-card-border/50 hover:border-accent/50 focus:border-accent'}`}
               placeholder="Enter event title"
               disabled={isSubmitting}
             />
             {errors.title && (
-              <p className="mt-1" style={{ fontSize: '13px', color: '#EF4444' }}>{errors.title}</p>
+              <p className="mt-1 text-[13px] text-danger">{errors.title}</p>
             )}
           </div>
 
           {/* Event Description */}
           <div>
-            <label className="block mb-2" style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>
+            <label className="block mb-2 text-[14px] font-semibold text-fg-secondary">
               Description
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-3 rounded-lg transition-colors resize-none"
-              style={{
-                background: '#FFFFFF',
-                border: errors.description ? '2px solid #EF4444' : '1px solid #D1D5DB',
-                color: '#111827',
-                fontSize: '15px'
-              }}
-              onFocus={(e) => !errors.description && (e.target.style.border = '2px solid #6366F1')}
-              onBlur={(e) => !errors.description && (e.target.style.border = '1px solid #D1D5DB')}
+              className={`w-full px-4 py-3 rounded-lg transition-colors resize-none bg-bg text-fg text-[15px] outline-none border ${errors.description ? 'border-danger' : 'border-card-border/50 hover:border-accent/50 focus:border-accent'}`}
               placeholder="Enter event description (optional)"
               rows={4}
               disabled={isSubmitting}
             />
             {errors.description && (
-              <p className="mt-1" style={{ fontSize: '13px', color: '#EF4444' }}>{errors.description}</p>
+              <p className="mt-1 text-[13px] text-danger">{errors.description}</p>
             )}
-            <p className="mt-1" style={{ fontSize: '12px', color: '#9CA3AF' }}>
+            <p className="mt-1 text-[12px] text-fg-secondary/70">
               {formData.description?.length || 0}/500 characters
             </p>
           </div>
 
           {/* Event Date */}
           <div>
-            <label className="block mb-2" style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>
+            <label className="block mb-2 text-[14px] font-semibold text-fg-secondary">
               Event Date
             </label>
             <input
               type="date"
               value={formData.event_date}
               onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-              className="w-full px-4 py-3 rounded-lg transition-colors"
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid #D1D5DB',
-                color: '#111827',
-                fontSize: '15px'
-              }}
-              onFocus={(e) => e.target.style.border = '2px solid #6366F1'}
-              onBlur={(e) => e.target.style.border = '1px solid #D1D5DB'}
+              className="w-full px-4 py-3 rounded-lg transition-colors bg-bg text-fg text-[15px] outline-none border border-card-border/50 hover:border-accent/50 focus:border-accent"
               disabled={isSubmitting}
             />
           </div>
 
           {/* Feedback Window */}
-          <div className="p-4 rounded-lg" style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
-            <h3 className="mb-3" style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>
+          <div className="p-5 rounded-lg bg-bg-secondary border border-card-border/50">
+            <h3 className="mb-2 text-[14px] font-semibold text-fg">
               Feedback Collection Window
             </h3>
-            <p className="mb-4" style={{ fontSize: '13px', color: '#6B7280' }}>
+            <p className="mb-5 text-[13px] text-fg-secondary">
               Define when participants can submit feedback for this event
             </p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Open At */}
               <div>
-                <label className="block mb-2" style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
+                <label className="block mb-2 text-[13px] font-semibold text-fg-secondary">
                   Opens At
                 </label>
                 <input
                   type="datetime-local"
                   value={formData.feedback_open_at || ''}
                   onChange={(e) => setFormData({ ...formData, feedback_open_at: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg transition-colors"
-                  style={{
-                    background: '#FFFFFF',
-                    border: '1px solid #D1D5DB',
-                    color: '#111827',
-                    fontSize: '14px'
-                  }}
-                  onFocus={(e) => e.target.style.border = '2px solid #6366F1'}
-                  onBlur={(e) => e.target.style.border = '1px solid #D1D5DB'}
-                  disabled={isSubmitting}
+                  className={`w-full px-3 py-2.5 rounded-lg transition-colors bg-bg text-fg text-[14px] outline-none border ${errors.feedback_open_at ? 'border-danger' : 'border-card-border/50 hover:border-accent/50 focus:border-accent'} ${hasEventStarted ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  disabled={isSubmitting || hasEventStarted}
                 />
+                {errors.feedback_open_at && (
+                  <p className="mt-1 text-[12px] text-danger">{errors.feedback_open_at}</p>
+                )}
               </div>
 
               {/* Close At */}
               <div>
-                <label className="block mb-2" style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
+                <label className="block mb-2 text-[13px] font-semibold text-fg-secondary">
                   Closes At
                 </label>
                 <input
                   type="datetime-local"
                   value={formData.feedback_close_at || ''}
                   onChange={(e) => setFormData({ ...formData, feedback_close_at: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg transition-colors"
-                  style={{
-                    background: '#FFFFFF',
-                    border: errors.feedback_close_at ? '2px solid #EF4444' : '1px solid #D1D5DB',
-                    color: '#111827',
-                    fontSize: '14px'
-                  }}
-                  onFocus={(e) => !errors.feedback_close_at && (e.target.style.border = '2px solid #6366F1')}
-                  onBlur={(e) => !errors.feedback_close_at && (e.target.style.border = '1px solid #D1D5DB')}
+                  className={`w-full px-3 py-2.5 rounded-lg transition-colors bg-bg text-fg text-[14px] outline-none border ${errors.feedback_close_at ? 'border-danger' : 'border-card-border/50 hover:border-accent/50 focus:border-accent'}`}
                   disabled={isSubmitting}
                 />
                 {errors.feedback_close_at && (
-                  <p className="mt-1" style={{ fontSize: '12px', color: '#EF4444' }}>{errors.feedback_close_at}</p>
+                  <p className="mt-1 text-[12px] text-danger">{errors.feedback_close_at}</p>
                 )}
               </div>
             </div>
@@ -302,18 +290,11 @@ export default function EditEventModal({ isOpen, onClose, onSuccess, event }: Ed
         </form>
 
         {/* Footer */}
-        <div className="flex gap-3 p-6 border-t" style={{ borderColor: '#E5E7EB', background: '#F9FAFB' }}>
+        <div className="flex gap-3 p-6 border-t border-card-border/50 bg-bg-secondary/50">
           <button
             type="button"
             onClick={handleClose}
-            className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors"
-            style={{
-              background: '#FFFFFF',
-              border: '1px solid #D1D5DB',
-              color: '#374151'
-            }}
-            onMouseEnter={(e) => !isSubmitting && (e.currentTarget.style.background = '#F9FAFB')}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
+            className="flex-1 px-4 py-3 rounded-xl font-semibold transition-colors bg-bg border border-card-border hover:bg-hover-overlay text-fg-secondary hover:text-fg disabled:opacity-50"
             disabled={isSubmitting}
           >
             Cancel
@@ -321,13 +302,7 @@ export default function EditEventModal({ isOpen, onClose, onSuccess, event }: Ed
           <button
             type="submit"
             onClick={handleSubmit}
-            className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            style={{
-              background: isSubmitting ? '#9CA3AF' : '#6366F1',
-              color: '#FFFFFF'
-            }}
-            onMouseEnter={(e) => !isSubmitting && (e.currentTarget.style.background = '#4F46E5')}
-            onMouseLeave={(e) => !isSubmitting && (e.currentTarget.style.background = '#6366F1')}
+            className="flex-1 px-4 py-3 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg hover:shadow-accent/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 bg-accent text-white hover:bg-accent/90"
             disabled={isSubmitting}
           >
             {isSubmitting ? (

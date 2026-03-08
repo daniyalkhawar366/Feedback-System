@@ -2,17 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, MessageSquare, BarChart3, FileText, Lightbulb } from 'lucide-react';
+import { ArrowLeft, MessageSquare, BarChart3, FileText, Lightbulb } from 'lucide-react';
+import PageLoader from '@/components/PageLoader';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import OverviewTab from '@/components/analytics/OverviewTab';
-import SummaryTab from '@/components/analytics/SummaryTab';
 import InsightsTab from '@/components/analytics/InsightsTab';
 import FeedbacksTab from '@/components/analytics/FeedbacksTab';
 import { useAuth } from '@/hooks/useAuth';
+import ThemeToggle from '@/components/ThemeToggle';
 import api from '@/utils/api';
 import type { EventRead } from '@/types/api';
 
-type TabType = 'overview' | 'summary' | 'insights' | 'feedbacks';
+type TabType = 'overview' | 'insights' | 'feedbacks';
 
 export default function AnalyticsPage() {
   const params = useParams();
@@ -42,7 +43,6 @@ export default function AnalyticsPage() {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
-    { id: 'summary', label: 'Summary', icon: FileText },
     { id: 'insights', label: 'Insights', icon: Lightbulb },
     { id: 'feedbacks', label: 'Feedbacks', icon: MessageSquare },
   ] as const;
@@ -50,122 +50,111 @@ export default function AnalyticsPage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="w-12 h-12 text-blue-500 mx-auto mb-4" style={{ animation: 'spin 1s linear infinite' }} />
-            <p className="text-gray-600 font-semibold text-base">Loading analytics...</p>
-          </div>
-        </div>
+        <PageLoader message="Loading analytics…" />
       </ProtectedRoute>
     );
   }
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        {/* Header */}
-        <header className="bg-white/80 backdrop-blur-md border-b border-blue-100 sticky top-0 z-10 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => router.push('/dashboard')}
-                  className="p-2 hover:bg-blue-50 rounded-xl transition-all hover:scale-105"
-                >
-                  <ArrowLeft className="w-6 h-6 text-gray-700" />
-                </button>
-                <div>
-                  <h1
-                    className="text-2xl font-bold text-gray-900"
-                    style={{ letterSpacing: '-0.02em' }}
-                  >
-                    {event?.title || 'Event Analytics'}
-                  </h1>
-                  <div className="flex items-center gap-3 text-[15px] text-gray-600">
-                    {event?.event_date && (
-                      <span>
-                        {new Date(event.event_date).toLocaleDateString()}
-                      </span>
-                    )}
-                    {event?.feedback_open_at && event?.feedback_close_at && (
-                      <>
-                        <span className="text-gray-400">•</span>
-                        <span className="flex items-center gap-1">
-                          Feedback: {new Date(event.feedback_open_at).toLocaleString('en-US', { 
-                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                          })} - {new Date(event.feedback_close_at).toLocaleString('en-US', { 
-                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                          })}
-                        </span>
-                        <span className="text-gray-400">•</span>
-                        {(() => {
-                          const now = new Date();
-                          const openAt = new Date(event.feedback_open_at);
-                          const closeAt = new Date(event.feedback_close_at);
-                          
-                          if (now < openAt) {
-                            return (
-                              <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[13px] font-semibold rounded-full shadow-sm">
-                                Upcoming
-                              </span>
-                            );
-                          } else if (now >= openAt && now <= closeAt) {
-                            return (
-                              <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[13px] font-semibold rounded-full shadow-sm">
-                                Open
-                              </span>
-                            );
-                          } else {
-                            return (
-                              <span className="px-2.5 py-1 bg-gray-100 text-gray-700 text-[13px] font-semibold rounded-full shadow-sm">
-                                Closed
-                              </span>
-                            );
-                          }
-                        })()}
-                      </>
-                    )}
-                    {!event?.feedback_open_at && !event?.feedback_close_at && (
-                      <span>Analyze feedback and insights</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Tab Navigation */}
-        <div className="bg-white/80 backdrop-blur-md border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex overflow-x-auto scrollbar-hide">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-6 py-4 font-semibold transition-all border-b-2 whitespace-nowrap text-[15px] ${
-                      activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600 bg-blue-50/50'
-                        : 'border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+      <div className="flex h-screen bg-bg text-fg overflow-hidden relative selection:bg-accent-glow">
+        {/* Ambient Effects */}
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="bg-noise" />
+          <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-accent/5 blur-[120px] transition-transform duration-1000 ease-out" />
+          <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-accent-light/10 blur-[150px] transition-transform duration-1000 ease-out" />
         </div>
 
-        {/* Tab Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {activeTab === 'overview' && <OverviewTab eventId={eventId} />}
-          {activeTab === 'summary' && <SummaryTab eventId={eventId} />}
-          {activeTab === 'insights' && <InsightsTab eventId={eventId} />}
-          {activeTab === 'feedbacks' && <FeedbacksTab eventId={eventId} />}
+        {/* --- Sidebar Navigation --- */}
+        <aside className="relative z-20 w-[260px] flex-shrink-0 flex flex-col border-r border-card-border/50 bg-nav-bg backdrop-blur-xl animate-fade-up">
+          {/* Top Info section */}
+          <div className="flex flex-col p-6 border-b border-card-border/50">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-card-bg border border-card-border rounded-lg text-[13px] font-bold text-fg shadow-sm hover:border-accent/40 hover:text-accent transition-all mb-6 w-full"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+            </button>
+            <h1 className="text-[18px] font-bold text-fg tracking-tight leading-tight">
+              {event?.title || 'Event Analytics'}
+            </h1>
+
+            {/* Status / Date logic */}
+            <div className="flex flex-col mt-4 gap-2">
+              {event?.event_date && (
+                <div className="text-[12px] font-semibold text-fg-secondary tracking-wide uppercase">
+                  {new Date(event.event_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
+              )}
+              {event?.feedback_open_at && event?.feedback_close_at && (
+                <div>
+                  {(() => {
+                    const now = new Date();
+                    const openAt = new Date(event.feedback_open_at);
+                    const closeAt = new Date(event.feedback_close_at);
+                    if (now < openAt) {
+                      return (
+                        <span className="inline-flex items-center px-2 py-1 bg-accent/10 border border-accent/20 text-accent text-[11px] font-bold uppercase tracking-widest rounded-md shadow-sm">
+                          Upcoming
+                        </span>
+                      );
+                    } else if (now >= openAt && now <= closeAt) {
+                      return (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-card-bg border border-card-border rounded-md text-[11px] font-bold uppercase tracking-widest text-fg shadow-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" /> Active
+                        </span>
+                      );
+                    } else {
+                      return (
+                        <span className="inline-flex items-center px-2 py-1 bg-hover-overlay text-fg-secondary text-[11px] font-bold uppercase tracking-widest rounded-md shadow-sm border border-card-border">
+                          Closed
+                        </span>
+                      );
+                    }
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Nav List */}
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-1.5">
+            <div className="text-[11px] font-bold uppercase tracking-widest text-fg-secondary/50 px-3 mb-2 mt-2">
+              Analytics Menu
+            </div>
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[14px] font-semibold transition-all ${isActive
+                    ? 'bg-accent/10 text-accent border border-accent/20'
+                    : 'text-fg-secondary hover:text-fg hover:bg-bg-secondary border border-transparent'
+                    }`}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-accent' : 'text-fg-secondary'}`} />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="p-4 border-t border-card-border/50 flex justify-between items-center">
+            <span className="text-[12px] font-medium text-fg-secondary">Theme Preference</span>
+            <ThemeToggle />
+          </div>
+        </aside>
+
+        {/* --- Main Content Area --- */}
+        <main className="relative z-10 flex-1 h-screen overflow-y-auto p-8 animate-fade-up stagger-2">
+          <div className="max-w-5xl mx-auto w-full pb-32">
+            {activeTab === 'overview' && <OverviewTab eventId={eventId} feedbackOpenAt={event?.feedback_open_at} feedbackCloseAt={event?.feedback_close_at} />}
+            {activeTab === 'insights' && <InsightsTab eventId={eventId} />}
+            {activeTab === 'feedbacks' && <FeedbacksTab eventId={eventId} />}
+          </div>
         </main>
       </div>
     </ProtectedRoute>

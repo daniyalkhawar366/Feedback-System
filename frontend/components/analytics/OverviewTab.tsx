@@ -1,18 +1,22 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import {
-  TrendingUp,
-  TrendingDown,
   MessageSquare,
   Mic,
-  ThumbsUp,
-  Flag,
   Loader2,
   FileText,
-  BarChart2,
+  AlertCircle,
+  CheckCircle2,
   Clock,
+  ShieldAlert,
+  Activity,
+  ArrowRight,
+  ThumbsUp,
+  BarChart2,
+  Flag
 } from 'lucide-react';
+import PageLoader from '@/components/PageLoader';
 import {
   PieChart,
   Pie,
@@ -23,158 +27,27 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  LabelList,
 } from 'recharts';
 import api from '@/utils/api';
-import type { EventStats } from '@/types/api';
+import type { EventStats, ConsensusReport } from '@/types/api';
 
 interface OverviewTabProps {
   eventId: string;
+  feedbackOpenAt?: string | null;
+  feedbackCloseAt?: string | null;
 }
 
-// ── Design tokens (modern color scheme) ────────────────────────────────────────
-const t = {
-  bg: '#F9FAFB',
-  surface: '#ffffff',
-  surfaceTint: '#f9fafb',
-  border: '#e5e7eb',
-  borderSoft: '#f3f4f6',
-  text: '#1f2937',
-  textMuted: '#9ca3af',
-  textSecondary: '#6b7280',
-  primary: '#3b82f6',
-  primaryBg: '#dbeafe',
-  green: '#10b981',
-  greenBg: '#d1fae5',
-  amber: '#f59e0b',
-  amberBg: '#fef3c7',
-  red: '#ef4444',
-  redBg: '#fee2e2',
-  indigo: '#6366f1',
-  indigoBg: '#e0e7ff',
-};
+// ── Main Component ───────────────────────────────────────────────────────────
 
-// ── Shared micro-components ──────────────────────────────────────────────────
-
-function MetricCard({
-  icon,
-  label,
-  value,
-  trend,
-  valueColor = t.text,
-  iconColor,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  trend?: 'up' | 'down' | null;
-  valueColor?: string;
-  iconColor?: string;
-}) {
-  return (
-    <div
-      style={{
-        background: t.surface,
-        border: `1px solid ${t.border}`,
-        borderRadius: 16,
-        padding: '24px',
-        transition: 'box-shadow 0.2s, transform 0.2s',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-      }}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.15)';
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div
-          style={{
-            width: 42,
-            height: 42,
-            background: `linear-gradient(135deg, ${t.primaryBg} 0%, ${t.indigoBg} 100%)`,
-            border: `1px solid ${t.border}`,
-            borderRadius: 12,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: iconColor || t.primary,
-          }}
-        >
-          {icon}
-        </div>
-        {trend === 'up' && <TrendingUp size={18} color={t.green} strokeWidth={2.5} />}
-        {trend === 'down' && <TrendingDown size={18} color={t.red} strokeWidth={2.5} />}
-      </div>
-      <div style={{ fontSize: 36, fontWeight: 700, color: valueColor, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-        {value}
-      </div>
-      <div style={{ marginTop: 6, fontSize: 15, color: t.textSecondary, fontWeight: 600 }}>{label}</div>
-    </div>
-  );
-}
-
-function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        background: t.surface,
-        border: `1px solid ${t.border}`,
-        borderRadius: 16,
-        padding: '0',
-        overflow: 'hidden',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-      }}
-    >
-      {title && (
-        <div
-          style={{
-            background: 'transparent',
-            borderLeft: `4px solid #6366F1`,
-            paddingLeft: 16,
-            padding: '18px 24px',
-            marginBottom: 0,
-          }}
-        >
-          <h3
-            style={{
-              fontSize: 24,
-              fontWeight: 600,
-              color: '#111827',
-              letterSpacing: '-0.02em',
-              margin: 0,
-            }}
-          >
-            {title}
-          </h3>
-        </div>
-      )}
-      <div style={{ padding: title ? '24px' : '24px' }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-const customTooltipStyle = {
-  backgroundColor: t.surface,
-  border: `1px solid ${t.border}`,
-  borderRadius: 10,
-  fontSize: 12.5,
-  color: t.text,
-  boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-};
-
-// ── Main component ───────────────────────────────────────────────────────────
-
-export default function OverviewTab({ eventId }: OverviewTabProps) {
+export default function OverviewTab({ eventId, feedbackOpenAt, feedbackCloseAt }: OverviewTabProps) {
   const [stats, setStats] = useState<EventStats | null>(null);
+  const [reportData, setReportData] = useState<any>(null);
   const [hasReport, setHasReport] = useState<boolean | null>(null);
   const [loadingReport, setLoadingReport] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
   const [generating, setGenerating] = useState(false);
+
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -201,8 +74,10 @@ export default function OverviewTab({ eventId }: OverviewTabProps) {
       setLoadingReport(true);
       const response = await api.get(`/api/reports/events/${eventId}/latest`);
       setHasReport(!!response.data);
+      setReportData(response.data);
     } catch {
       setHasReport(false);
+      setReportData(null);
     } finally {
       setLoadingReport(false);
     }
@@ -222,540 +97,366 @@ export default function OverviewTab({ eventId }: OverviewTabProps) {
     }
   };
 
-  // ── Loading ──────────────────────────────────────────────────────────────
+  // ── Loading State ───────────────────────────────────────────────────────
   if (loadingStats || loadingReport) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
-        <div style={{ textAlign: 'center' }}>
-          <Loader2 size={28} color={t.textMuted} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
-          <p style={{ fontSize: 13, color: t.textMuted }}>Loading…</p>
-        </div>
-      </div>
-    );
+    return <PageLoader fullScreen={false} message="Analyzing feedback data…" />;
   }
+
   if (!stats) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
-        <p style={{ fontSize: 13.5, color: t.textMuted }}>No statistics available</p>
+      <div className="flex items-center justify-center py-32 animate-fade-up">
+        <p className="text-[14px] text-fg-secondary font-medium tracking-wide">
+          No statistics available.
+        </p>
       </div>
     );
   }
-  // ── No report yet ────────────────────────────────────────────────────────
+
+  const noFeedback = (stats.total_feedback || 0) === 0;
+
+  // ── Empty / Pre-Report State ─────────────────────────────────────────────
   if (!hasReport) {
-    const noFeedback = (stats.total_feedback || 0) === 0;
-
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Simple count card */}
-        <SectionCard>
-          <div style={{ textAlign: 'center', padding: '12px 0 8px' }}>
-            <div
-              style={{
-                fontSize: 56,
-                fontWeight: 700,
-                color: t.text,
-                letterSpacing: '-0.04em',
-                lineHeight: 1,
-              }}
-            >
-              {stats.total_feedback || 0}
-            </div>
-            <div style={{ marginTop: 6, fontSize: 13.5, color: t.textMuted }}>Total Feedback Received</div>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 12,
-                maxWidth: 320,
-                margin: '24px auto 0',
-              }}
-            >
-              {[
-                { icon: <MessageSquare size={14} />, label: 'Text', val: stats.input_type_breakdown?.text || 0 },
-                { icon: <Mic size={14} />, label: 'Audio', val: stats.input_type_breakdown?.audio || 0 },
-              ].map(item => (
-                <div
-                  key={item.label}
-                  style={{
-                    background: t.surfaceTint,
-                    border: `1px solid ${t.borderSoft}`,
-                    borderRadius: 10,
-                    padding: '14px 12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 6,
-                    color: t.textSecondary,
-                  }}
-                >
-                  {item.icon}
-                  <span style={{ fontSize: 24, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>{item.val}</span>
-                  <span style={{ fontSize: 11.5, color: t.textMuted }}>{item.label}</span>
-                </div>
-              ))}
-            </div>
+      <div className="max-w-4xl mx-auto flex flex-col pt-4 animate-fade-up">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-card-bg border border-card-border p-6 rounded-[20px] shadow-sm flex flex-col items-center justify-center text-center">
+            <h3 className="text-[13px] font-bold text-fg-secondary uppercase tracking-widest mb-2">Total Responses</h3>
+            <span className="text-5xl font-bold font-mono text-fg">{stats.total_feedback || 0}</span>
           </div>
-        </SectionCard>
+          <div className="bg-card-bg border border-card-border p-6 rounded-[20px] shadow-sm flex flex-col items-center justify-center text-center">
+            <h3 className="text-[13px] font-bold text-fg-secondary uppercase tracking-widest mb-2">Text Inputs</h3>
+            <span className="text-5xl font-bold font-mono text-fg">{stats.input_type_breakdown?.text || 0}</span>
+          </div>
+          <div className="bg-card-bg border border-card-border p-6 rounded-[20px] shadow-sm flex flex-col items-center justify-center text-center">
+            <h3 className="text-[13px] font-bold text-fg-secondary uppercase tracking-widest mb-2">Audio Clips</h3>
+            <span className="text-5xl font-bold font-mono text-fg">{stats.input_type_breakdown?.audio || 0}</span>
+          </div>
+        </div>
 
-        {/* Generate report CTA */}
-        <div
-          style={{
-            background: t.surface,
-            border: `1px solid ${t.border}`,
-            borderRadius: 14,
-            padding: '28px 28px 24px',
-            textAlign: 'center',
-          }}
-        >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              background: t.text,
-              borderRadius: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px',
-            }}
-          >
-            <FileText size={20} color="#fff" />
+        {/* Generate Action Area */}
+        <div className="relative overflow-hidden flex flex-col items-center justify-center py-20 px-6 border border-card-border rounded-[24px] bg-card-bg shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent pointer-events-none" />
+
+          <div className="w-16 h-16 bg-accent text-bg rounded-[20px] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
+            <Activity className="w-7 h-7" />
           </div>
 
-          <div
-            style={{
-              fontSize: 24,
-              fontWeight: 700,
-              color: t.text,
-              marginBottom: 8,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            Generate an AI Report
-          </div>
-          <p style={{ fontSize: 13.5, color: t.textMuted, maxWidth: 380, margin: '0 auto 22px', lineHeight: 1.6 }}>
-            Unlock detailed analytics, sentiment analysis, and actionable recommendations from your feedback.
+          <h2 className="text-[22px] font-bold text-fg mb-3 tracking-tight">
+            {noFeedback ? 'Awaiting Feedback' : 'Analysis Dashboard Ready'}
+          </h2>
+          <p className="text-[15px] text-fg-secondary max-w-[420px] text-center mb-10 leading-relaxed">
+            {noFeedback
+              ? 'Your dashboard visuals will populate once attendees begin submitting their feedback responses.'
+              : `You have ${stats.total_feedback} entries. Generate an AI intelligence report to extract sentiment, quality, and insights.`}
           </p>
 
           <button
             onClick={handleGenerateReport}
             disabled={generating || noFeedback}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 7,
-              padding: '10px 20px',
-              background: noFeedback || generating ? t.borderSoft : t.text,
-              color: noFeedback || generating ? t.textMuted : '#fff',
-              border: 'none',
-              borderRadius: 10,
-              fontSize: 13,
-              fontWeight: 500,
-              fontFamily: "'DM Sans', sans-serif",
-              cursor: noFeedback || generating ? 'not-allowed' : 'pointer',
-              transition: 'all 0.15s',
-            }}
+            className={`
+              inline-flex items-center gap-2.5 px-8 py-4 rounded-[16px] font-semibold text-[15px] transition-all
+              ${noFeedback || generating
+                ? 'bg-hover-overlay text-fg-secondary cursor-not-allowed'
+                : 'bg-fg text-bg hover:opacity-90 active:scale-[0.98] shadow-md hover:shadow-lg'
+              }
+            `}
           >
             {generating ? (
               <>
-                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                Generating…
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Processing Report...
               </>
             ) : (
               <>
-                <FileText size={14} />
-                Generate Report
+                <FileText className="w-5 h-5" />
+                Generate Visual Report
               </>
             )}
           </button>
-
-          {noFeedback && (
-            <p style={{ marginTop: 12, fontSize: 12, color: t.textMuted }}>
-              Waiting for feedback responses…
-            </p>
-          )}
         </div>
       </div>
     );
   }
 
-  // ── Full analytics view ──────────────────────────────────────────────────
+  // ── Full Analytics View ──────────────────────────────────────────────────
+
+  // Calculations
+  const flagged = stats.quality_breakdown?.flagged || 0;
+
+  const posCount = stats.sentiment_distribution?.positive?.count || 0;
+  const neuCount = stats.sentiment_distribution?.neutral?.count || 0;
+  const negCount = stats.sentiment_distribution?.negative?.count || 0;
+
+  const posPct = stats.sentiment_distribution?.positive?.percentage || 0;
+  const confidence = ((stats.avg_confidence || 0) * 100).toFixed(1);
+
   const sentimentData = [
-    { name: 'Positive', value: stats.sentiment_distribution?.positive?.count || 0, color: t.green },
-    { name: 'Negative', value: stats.sentiment_distribution?.negative?.count || 0, color: t.red },
-    { name: 'Neutral', value: stats.sentiment_distribution?.neutral?.count || 0, color: t.textMuted },
+    { name: 'Positive', value: posCount, color: 'var(--success)' },
+    { name: 'Neutral', value: neuCount, color: 'var(--fg-secondary)' },
+    { name: 'Negative', value: negCount, color: 'var(--danger)' },
   ].filter(d => d.value > 0);
 
+  const qualityTotal = (stats.quality_breakdown?.accepted || 0) + flagged + (stats.quality_breakdown?.rejected || 0) || 1;
   const qualityData = [
-    { name: 'Accepted', value: stats.quality_breakdown?.accepted || 0, color: t.green },
-    { name: 'Flagged', value: stats.quality_breakdown?.flagged || 0, color: t.amber },
-    { name: 'Rejected', value: stats.quality_breakdown?.rejected || 0, color: t.red },
+    { name: 'Accepted', value: parseFloat((((stats.quality_breakdown?.accepted || 0) / qualityTotal) * 100).toFixed(1)), color: 'var(--success)' },
+    { name: 'Flagged', value: parseFloat(((flagged / qualityTotal) * 100).toFixed(1)), color: '#f59e0b' },
+    { name: 'Rejected', value: parseFloat((((stats.quality_breakdown?.rejected || 0) / qualityTotal) * 100).toFixed(1)), color: 'var(--danger)' },
   ];
 
-  const positivePct = stats.sentiment_distribution?.positive?.percentage || 0;
-  const overallLabel =
-    positivePct > 60 ? 'highly positive' : positivePct > 40 ? 'moderately positive' :
-    (stats.sentiment_distribution?.negative?.percentage || 0) > 40 ? 'mixed' : 'neutral';
+  const tooltipStyle = {
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--card-border)',
+    borderRadius: '12px',
+    boxShadow: '0 8px 24px -6px rgba(0,0,0,0.1)',
+    color: 'var(--fg)',
+    fontWeight: 500,
+    fontSize: '13px',
+    padding: '10px 14px'
+  };
 
   return (
-    <>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="animate-fade-up flex flex-col gap-6">
 
-      {/* ── Key metrics ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-        <MetricCard
-          icon={<MessageSquare size={15} />}
-          label="Valid Feedback (Non-Flagged)"
-          value={stats.valid_feedback || 0}
-          iconColor="#6366F1"
-        />
-        <MetricCard
-          icon={<ThumbsUp size={15} />}
-          label={`Positive (${stats.sentiment_distribution?.positive?.count || 0})`}
-          value={`${positivePct.toFixed(1)}%`}
-          valueColor={t.green}
-          trend={positivePct > 50 ? 'up' : 'down'}
-          iconColor="#10B981"
-        />
-        <MetricCard
-          icon={<BarChart2 size={15} />}
-          label="Avg Confidence"
-          value={`${((stats.avg_confidence || 0) * 100).toFixed(1)}%`}
-          iconColor="#6366F1"
-        />
-        <MetricCard
-          icon={<Flag size={15} />}
-          label="Flagged Issues"
-          value={stats.quality_breakdown?.flagged || 0}
-          valueColor={stats.quality_breakdown?.flagged ? t.amber : t.text}
-          iconColor="#F59E0B"
-        />
+      {/* ── KPI Grid ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Metric 1 */}
+        <div className="bg-card-bg border border-card-border p-6 rounded-[20px] shadow-sm flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-40 transition-all duration-300 group-hover:scale-125 group-hover:rotate-12 text-fg-secondary group-hover:text-fg">
+            <MessageSquare size={48} />
+          </div>
+          <h3 className="text-[13px] font-semibold text-fg-secondary mb-6 relative z-10">Total Responses</h3>
+          <div className="text-[40px] font-bold font-mono text-fg leading-none tracking-tight relative z-10">
+            {stats.total_feedback || 0}
+          </div>
+        </div>
+
+        {/* Metric 2 */}
+        <div className="bg-card-bg border border-card-border p-6 rounded-[20px] shadow-sm flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-40 transition-all duration-300 group-hover:scale-125 group-hover:-rotate-12 text-fg-secondary group-hover:text-accent">
+            <BarChart2 size={48} />
+          </div>
+          <h3 className="text-[13px] font-semibold text-fg-secondary mb-6 relative z-10">Confidence Score</h3>
+          <div className="text-[40px] font-bold font-mono text-fg leading-none tracking-tight relative z-10">
+            {confidence}%
+          </div>
+        </div>
+
+        {/* Metric 3 */}
+        <div className={`border p-6 rounded-[20px] shadow-sm flex flex-col justify-between relative overflow-hidden group ${flagged > 0 ? 'bg-danger/5 border-danger/20' : 'bg-card-bg border-card-border'}`}>
+          <div className={`absolute top-0 right-0 p-6 transition-all duration-300 group-hover:scale-125 group-hover:rotate-12 ${flagged > 0 ? 'opacity-10 group-hover:opacity-40 text-danger' : 'opacity-20 group-hover:opacity-40 text-fg-secondary group-hover:text-danger'}`}>
+            <Flag size={48} />
+          </div>
+          <h3 className={`text-[13px] font-semibold mb-6 relative z-10 ${flagged > 0 ? 'text-danger/80' : 'text-fg-secondary'}`}>Flagged Issues</h3>
+          <div className={`text-[40px] font-bold font-mono leading-none tracking-tight relative z-10 ${flagged > 0 ? 'text-danger' : 'text-fg'}`}>
+            {flagged}
+          </div>
+        </div>
       </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-      {/* ── Charts row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        {/* Sentiment pie */}
-        <SectionCard title="Sentiment Distribution">
-          {sentimentData.length > 0 ? (
-            <div style={{ height: 220 }}>
+        {/* ── Sentiment Visual ── */}
+        <div className="bg-card-bg border border-card-border rounded-[20px] shadow-sm p-6 flex flex-col h-[380px]">
+          <h3 className="text-[16px] font-bold text-fg mb-2">Sentiment Breakdown</h3>
+          <p className="text-[13px] text-fg-secondary mb-6">Visual volume distribution of analyzed feedback sentiments.</p>
+
+          <div className="flex-1 w-full relative">
+            {sentimentData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={sentimentData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={55}
-                    outerRadius={80}
+                    innerRadius={75}
+                    outerRadius={110}
                     paddingAngle={3}
                     dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                    labelLine={false}
+                    stroke="none"
                   >
                     {sentimentData.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={customTooltipStyle} />
+                  <Tooltip contentStyle={tooltipStyle} cursor={false} />
                 </PieChart>
               </ResponsiveContainer>
-            </div>
-          ) : (
-            <p style={{ textAlign: 'center', color: t.textMuted, padding: '40px 0', fontSize: 13 }}>
-              No feedback data yet
-            </p>
-          )}
-        </SectionCard>
+            ) : (
+              <div className="flex items-center justify-center h-full text-[13px] font-medium text-fg-secondary bg-bg-secondary/30 rounded-full mx-10">No sentiment data available</div>
+            )}
 
-        {/* Quality bar */}
-        <SectionCard title="Quality Breakdown">
-          <div style={{ height: 220 }}>
+            {/* Center Label inside Donut */}
+            {sentimentData.length > 0 && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-[32px] font-bold font-mono text-fg leading-none">{posPct.toFixed(0)}%</span>
+                <span className="text-[12px] font-semibold text-success uppercase tracking-wider mt-1">Positive</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Quality Visual ── */}
+        <div className="bg-card-bg border border-card-border rounded-[20px] shadow-sm p-6 flex flex-col h-[380px]">
+          <h3 className="text-[16px] font-bold text-fg mb-2">Quality & Moderation</h3>
+          <p className="text-[13px] text-fg-secondary mb-6">Automated filtering outcomes from the intelligence engine.</p>
+
+          <div className="flex-1 w-full p-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={qualityData} barSize={28}>
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11.5, fill: t.textMuted, fontFamily: "'DM Sans', sans-serif" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
+              <BarChart data={qualityData} layout="vertical" margin={{ top: 0, right: 45, left: 10, bottom: 0 }} barSize={32}>
+                <XAxis type="number" hide domain={[0, 100]} />
                 <YAxis
-                  tick={{ fontSize: 11.5, fill: t.textMuted, fontFamily: "'DM Sans', sans-serif" }}
+                  dataKey="name"
+                  type="category"
                   axisLine={false}
                   tickLine={false}
+                  tick={{ fontSize: 13, fill: 'var(--fg)', fontWeight: 600 }}
+                  width={80}
                 />
-                <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: t.borderSoft }} />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={{ fill: 'var(--bg-secondary)', opacity: 0.5 }}
+                  formatter={(val: any) => [`${val}%`, '']}
+                />
+                <Bar dataKey="value" radius={[0, 8, 8, 0]}>
                   {qualityData.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />
                   ))}
+                  <LabelList
+                    dataKey="value"
+                    position="right"
+                    fill="var(--fg)"
+                    fontSize={13}
+                    fontWeight={700}
+                    // @ts-ignore
+                    formatter={(val: any) => `${val}%`}
+                  />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </SectionCard>
+        </div>
       </div>
 
-      {/* ── Input types + Collection period ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        {/* Input types */}
-        <SectionCard title="Input Types">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[
-              { icon: <MessageSquare size={14} />, label: 'Text Feedback', val: stats.input_type_breakdown?.text || 0 },
-              { icon: <Mic size={14} />, label: 'Audio Feedback', val: stats.input_type_breakdown?.audio || 0 },
-            ].map(item => (
-              <div
-                key={item.label}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 14px',
-                  background: t.surfaceTint,
-                  border: `1px solid ${t.borderSoft}`,
-                  borderRadius: 10,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: t.textSecondary }}>
-                  {item.icon}
-                  <span style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{item.label}</span>
-                </div>
-                <span
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 700,
-                    color: t.text,
-                    letterSpacing: '-0.02em',
-                  }}
-                >
-                  {item.val}
-                </span>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
 
-        {/* Collection period */}
-        <SectionCard title="Collection Period">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[
-              { label: 'Started', date: stats.feedback_collection_period?.start_date },
-              { label: 'Latest', date: stats.feedback_collection_period?.end_date },
-            ]
-              .filter(d => d.date)
-              .map(d => (
-                <div
-                  key={d.label}
-                  style={{
-                    padding: '12px 14px',
-                    background: t.surfaceTint,
-                    border: `1px solid ${t.borderSoft}`,
-                    borderRadius: 10,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      marginBottom: 4,
-                      fontSize: 10.5,
-                      fontWeight: 600,
-                      textTransform: 'uppercase' as const,
-                      letterSpacing: '0.07em',
-                      color: t.textMuted,
-                    }}
-                  >
-                    <Clock size={11} />
-                    {d.label}
-                  </div>
-                  <div style={{ fontSize: 13.5, fontWeight: 500, color: t.text }}>
-                    {new Date(d.date!).toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                </div>
-              ))}
-          </div>
-        </SectionCard>
-      </div>
-
-      {/* ── Detailed sentiment ── */}
-      <SectionCard title="Detailed Sentiment">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-          {[
-            {
-              label: 'Positive',
-              pct: stats.sentiment_distribution?.positive?.percentage || 0,
-              count: stats.sentiment_distribution?.positive?.count || 0,
-              color: t.green,
-              bg: t.greenBg,
-            },
-            {
-              label: 'Negative',
-              pct: stats.sentiment_distribution?.negative?.percentage || 0,
-              count: stats.sentiment_distribution?.negative?.count || 0,
-              color: t.red,
-              bg: t.redBg,
-            },
-            {
-              label: 'Neutral',
-              pct: stats.sentiment_distribution?.neutral?.percentage || 0,
-              count: stats.sentiment_distribution?.neutral?.count || 0,
-              color: t.textSecondary,
-              bg: t.surfaceTint,
-            },
-          ].map(s => {
-            const bgColor = s.label === 'Positive' ? '#D1FAE5' : s.label === 'Negative' ? '#FEE2E2' : '#F3F4F6';
-            return (
-            <div
-              key={s.label}
-              style={{
-                background: bgColor,
-                border: `1px solid ${t.borderSoft}`,
-                borderRadius: 10,
-                padding: '14px 16px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.06em', color: s.color }}>
-                  {s.label}
-                </span>
-                <span
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 700,
-                    color: s.color,
-                    letterSpacing: '-0.02em',
-                  }}
-                >
-                  {s.pct.toFixed(1)}%
-                </span>
-              </div>
-              <p style={{ fontSize: 12, color: t.textMuted }}>{s.count} responses</p>
+      {/* -- Intelligence Summary Card -- */}
+      {reportData && (
+        <div className="bg-card-bg border border-card-border rounded-[20px] shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-card-border/50">
+            <div className="flex items-center gap-2.5">
+              <FileText size={15} className="text-accent" />
+              <span className="text-[14px] font-bold text-fg tracking-tight">Intelligence Summary</span>
             </div>
-          );
-        })}
-        </div>
-      </SectionCard>
-
-      {/* ── Event summary ── */}
-      <SectionCard title="Event Summary">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[
-            `This event received ${stats.total_feedback || 0} feedback responses. The overall sentiment was ${overallLabel}, with ${stats.sentiment_distribution?.positive?.count || 0} positive and ${stats.sentiment_distribution?.negative?.count || 0} negative responses.`,
-            `Feedback included ${stats.input_type_breakdown?.text || 0} text responses and ${stats.input_type_breakdown?.audio || 0} audio recordings. The average confidence score of ${((stats.avg_confidence || 0) * 100).toFixed(1)}% indicates ${(stats.avg_confidence || 0) > 0.8 ? 'high-quality, detailed' : (stats.avg_confidence || 0) > 0.6 ? 'good quality' : 'varied'} feedback.`,
-            `Quality control flagged ${stats.quality_breakdown?.flagged || 0} items for review and rejected ${stats.quality_breakdown?.rejected || 0} low-quality submissions, while accepting ${stats.quality_breakdown?.accepted || 0} responses for analysis.`,
-          ].map((text, i) => (
-            <div
-              key={i}
-              style={{
-                padding: '14px 16px',
-                background: t.surfaceTint,
-                border: `1px solid ${t.borderSoft}`,
-                borderRadius: 10,
-                fontSize: 13.5,
-                color: '#4B5563',
-                lineHeight: 1.6,
-              }}
-            >
-              {text}
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-
-    </div>
-
-    {/* Success Modal */}
-    {showSuccessModal && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in duration-300">
-          {/* Success Icon */}
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: '#D1FAE5' }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-full bg-hover-overlay text-[11px] font-semibold text-fg-secondary font-mono">
+                {reportData.generated_at ? new Date(reportData.generated_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Just now"}
+              </span>
+              {typeof reportData.generation_time === "number" && (
+                <span className="px-2.5 py-1 rounded-full bg-accent/10 border border-accent/20 text-[11px] font-semibold text-accent font-mono">
+                  {reportData.generation_time.toFixed(1)}s
+                </span>
+              )}
             </div>
           </div>
-          
-          {/* Content */}
-          <div className="text-center mb-8">
-            <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>
-              Report Generated!
-            </h3>
-            <p style={{ fontSize: '15px', color: '#6B7280', lineHeight: 1.6 }}>
-              Your event report has been generated successfully. Check the <strong>Summary</strong> and <strong>Insights</strong> tabs to view the detailed analysis.
+          <div className="px-6 py-6">
+            <p className="text-[14px] leading-[1.8] text-fg/75">
+              {reportData.summary?.main_summary || reportData.report?.executive_summary || "No summary available."}
             </p>
           </div>
-
-          {/* Button */}
-          <button
-            onClick={() => setShowSuccessModal(false)}
-            className="w-full py-3 px-4 rounded-xl font-semibold transition-all"
-            style={{
-              background: '#6366F1',
-              color: '#FFFFFF',
-              fontSize: '15px',
-              fontWeight: 600,
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = '#4F46E5')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = '#6366F1')}
-          >
-            Got it!
-          </button>
         </div>
-      </div>
-    )}
+      )}
 
-    {/* Error Modal */}
-    {showErrorModal && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in duration-300">
-          {/* Error Icon */}
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: '#FEE2E2' }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="15" y1="9" x2="9" y2="15"></line>
-                <line x1="9" y1="9" x2="15" y2="15"></line>
-              </svg>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* ── Collection Status ── */}
+        <div className="bg-card-bg border border-card-border p-6 rounded-[20px] shadow-sm flex flex-col justify-center">
+          <h3 className="text-[16px] font-bold text-fg mb-6">Collection Timeline</h3>
+          <div className="flex justify-between items-center mb-4 pb-4 border-b border-card-border/50">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-bg-secondary flex items-center justify-center text-fg-secondary">
+                <Clock size={16} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[12px] font-semibold text-fg-secondary uppercase tracking-widest mb-0.5">Opened</span>
+                <span className="text-[14px] font-semibold text-fg">
+                  {feedbackOpenAt
+                    ? new Date(feedbackOpenAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                    : '-'}
+                </span>
+              </div>
             </div>
           </div>
-          
-          {/* Content */}
-          <div className="text-center mb-8">
-            <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>
-              Generation Failed
-            </h3>
-            <p style={{ fontSize: '15px', color: '#6B7280', lineHeight: 1.6 }}>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent">
+                <Activity size={16} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[12px] font-semibold text-fg-secondary uppercase tracking-widest mb-0.5">Status / Closed</span>
+                <span className="text-[14px] font-semibold text-fg">
+                  {feedbackCloseAt
+                    ? new Date(feedbackCloseAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                    : <span className="text-accent flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-accent animate-pulse" /> Active Collection</span>}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Input Medium ── */}
+        <div className="bg-card-bg border border-card-border p-6 rounded-[20px] shadow-sm grid grid-cols-2 gap-4">
+          <div className="flex flex-col col-span-2">
+            <h3 className="text-[16px] font-bold text-fg mb-2">Feedback Mediums</h3>
+            <p className="text-[13px] text-fg-secondary mb-4">Formats of submitted items.</p>
+          </div>
+          <div className="bg-bg-secondary/50 rounded-[16px] border border-card-border/50 p-5 flex flex-col items-center justify-center text-center transition-colors">
+            <span className="text-[32px] font-bold font-mono text-fg leading-none mb-1">{stats.input_type_breakdown?.text || 0}</span>
+            <span className="text-[13px] font-bold text-fg-secondary uppercase tracking-widest">Text</span>
+          </div>
+          <div className="bg-bg-secondary/50 rounded-[16px] border border-card-border/50 p-5 flex flex-col items-center justify-center text-center transition-colors">
+            <span className="text-[32px] font-bold font-mono text-fg leading-none mb-1">{stats.input_type_breakdown?.audio || 0}</span>
+            <span className="text-[13px] font-bold text-fg-secondary uppercase tracking-widest">Audio</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Modals ── */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card-bg border border-card-border rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in duration-300">
+            <div className="flex items-center gap-3 mb-4 text-success">
+              <CheckCircle2 className="w-5 h-5" />
+              <h3 className="text-[16px] font-bold tracking-tight text-fg">Report Available</h3>
+            </div>
+            <p className="text-[14px] text-fg-secondary leading-relaxed mb-6">
+              The intelligence engine has finished computing. Your dashboard has been updated.
+            </p>
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full py-2.5 rounded-lg text-[13px] font-bold bg-fg text-bg hover:opacity-90 transition-opacity"
+            >
+              Acknowledge
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showErrorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card-bg border border-card-border rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in duration-300">
+            <div className="flex items-center gap-3 mb-4 text-danger">
+              <AlertCircle className="w-5 h-5" />
+              <h3 className="text-[16px] font-bold tracking-tight text-fg">Generation Failed</h3>
+            </div>
+            <p className="text-[14px] text-fg-secondary leading-relaxed mb-6">
               {errorMessage}
             </p>
+            <button
+              onClick={() => setShowErrorModal(false)}
+              className="w-full py-2.5 rounded-lg text-[13px] font-bold bg-danger text-white hover:bg-danger/90 transition-colors"
+            >
+              Dismiss
+            </button>
           </div>
-
-          {/* Button */}
-          <button
-            onClick={() => setShowErrorModal(false)}
-            className="w-full py-3 px-4 rounded-xl font-semibold transition-all"
-            style={{
-              background: '#EF4444',
-              color: '#FFFFFF',
-              fontSize: '15px',
-              fontWeight: 600,
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = '#DC2626')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = '#EF4444')}
-          >
-            Close
-          </button>
         </div>
-      </div>
-    )}
-  </>
+      )}
+    </div>
   );
 }

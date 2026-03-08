@@ -2,18 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Loader2,
-  Search,
-  Filter,
-  ChevronDown,
-  ChevronUp,
   MessageSquare,
   Mic,
   Calendar,
   AlertTriangle,
+  Search,
+  Filter,
+  ChevronDown,
+  ChevronUp,
   CheckCircle2,
   XCircle,
 } from 'lucide-react';
+import PageLoader from '@/components/PageLoader';
 import api from '@/utils/api';
 import type { EventFeedbackRead } from '@/types/api';
 
@@ -43,7 +43,6 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
     try {
       setLoading(true);
       const response = await api.get<EventFeedbackRead[]>(`/events/${eventId}/feedback`);
-      console.log('Fetched feedbacks:', response.data);
       setFeedbacks(response.data || []);
     } catch (error) {
       console.error('Failed to fetch feedbacks:', error);
@@ -54,431 +53,300 @@ export default function FeedbacksTab({ eventId }: FeedbacksTabProps) {
   };
 
   const filteredFeedbacks = feedbacks.filter((fb) => {
-    // Text search
     const matchesSearch = (fb.raw_text || '').toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Sentiment filter
     const matchesSentiment = sentimentFilter === 'all' || (fb.sentiment || '').toLowerCase() === sentimentFilter.toLowerCase();
-    
-    // Quality filter
     const matchesQuality = qualityFilter === 'all' || (fb.quality_decision || '').toLowerCase() === qualityFilter.toLowerCase();
-    
-    // Type filter
     const matchesType = typeFilter === 'all' || (fb.input_type || '').toLowerCase() === typeFilter.toLowerCase();
-    
     return matchesSearch && matchesSentiment && matchesQuality && matchesType;
   });
 
-  const getSentimentColor = (sentiment: string) => {
+  const getSentimentClasses = (sentiment: string) => {
     switch (sentiment) {
-      case 'positive':
-        return 'text-[#059669] bg-[#D1FAE5] border-[#6EE7B7]';
-      case 'negative':
-        return 'text-[#DC2626] bg-[#FEE2E2] border-[#FCA5A5]';
-      case 'neutral':
-        return 'text-[#6B7280] bg-[#F3F4F6] border-[#D1D5DB]';
-      case 'pending':
-        return 'text-blue-600 bg-blue-50 border-blue-400';
-      default:
-        return 'text-[#6B7280] bg-[#F3F4F6] border-[#D1D5DB]';
+      case 'positive': return 'text-success bg-success/10 border-success/25';
+      case 'negative': return 'text-danger bg-danger/10 border-danger/25';
+      case 'neutral': return 'text-fg-secondary bg-hover-overlay border-card-border';
+      default: return 'text-fg-secondary bg-hover-overlay border-card-border';
+    }
+  };
+
+  const getSentimentDot = (sentiment: string) => {
+    switch (sentiment) {
+      case 'positive': return 'bg-success';
+      case 'negative': return 'bg-danger';
+      default: return 'bg-fg-secondary/50';
     }
   };
 
   const getQualityIcon = (decision: string) => {
     switch (decision?.toUpperCase()) {
-      case 'ACCEPT':
-        return <CheckCircle2 className="w-4 h-4" style={{ color: '#10B981' }} />;
-      case 'FLAG':
-        return <AlertTriangle className="w-4 h-4" style={{ color: '#F59E0B' }} />;
-      case 'REJECT':
-        return <XCircle className="w-4 h-4 text-red-600" />;
-      default:
-        return null;
+      case 'ACCEPT': return <CheckCircle2 className="w-4 h-4 text-success" />;
+      case 'FLAG': return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+      case 'REJECT': return <XCircle className="w-4 h-4 text-danger" />;
+      default: return null;
     }
   };
 
-  const toggleExpanded = (id: number) => {
+  const toggleExpanded = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const handleAudioPlay = (id: number) => {
-    setAudioPlaying(id);
-  };
+  const handleAudioPlay = (id: string) => setAudioPlaying(id);
+  const handleAudioPause = (id: string) => { if (audioPlaying === id) setAudioPlaying(null); };
 
-  const handleAudioPause = (id: number) => {
-    if (audioPlaying === id) {
-      setAudioPlaying(null);
-    }
-  };
+  /* ── Filter pill component ──────────────────────────────────────────────── */
+  const FilterPill = ({
+    label, active, onClick,
+  }: { label: string; active: boolean; onClick: () => void }) => (
+    <button
+      onClick={onClick}
+      className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all active:scale-95
+        ${active
+          ? 'bg-fg text-bg shadow-sm'
+          : 'bg-hover-overlay text-fg-secondary hover:text-fg hover:bg-card-border/40'}`}
+    >
+      {label}
+    </button>
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4" style={{ backgroundColor: '#F9FAFB' }}>
-        <div className="flex items-center gap-2 mb-2">
-          <Filter className="w-5 h-5 text-gray-900" />
-          <h3
-            className="text-lg font-bold text-gray-900"
-            style={{ letterSpacing: '-0.02em' }}
-          >
-            Filters
-          </h3>
+    <div className="flex flex-col gap-5 animate-fade-up">
+
+      {/* ── Filter panel ──────────────────────────────────────────────────────── */}
+      <div className="bg-card-bg border border-card-border rounded-[20px] p-5 flex flex-col gap-4">
+        {/* Header + search row */}
+        <div className="flex items-center gap-3">
+          <Filter className="w-4 h-4 text-fg-secondary shrink-0" />
+          <span className="text-[14px] font-bold text-fg tracking-tight">Filters</span>
         </div>
 
         {/* Search */}
         <div className="relative">
-          <Search className="w-5 h-5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-secondary pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search feedback text..."
-            className="w-full rounded-xl bg-white"
-            style={{
-              paddingLeft: '40px',
-              paddingRight: '16px',
-              paddingTop: '12px',
-              paddingBottom: '12px',
-              border: '1px solid #E5E7EB',
-              color: '#111827',
-              fontSize: '15px',
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.outline = 'none';
-              e.currentTarget.style.border = '1px solid #6366F1';
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.border = '1px solid #E5E7EB';
-            }}
+            placeholder="Search feedback text…"
+            className="w-full pl-10 pr-4 py-2.5 rounded-[12px] bg-bg-secondary border border-card-border text-[13.5px] text-fg placeholder:text-fg-secondary/50 focus:outline-none focus:border-accent/60 transition-colors"
           />
         </div>
 
-        {/* Filter Buttons */}
+        {/* Pill filters */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Sentiment Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Sentiment
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {(['all', 'positive', 'negative', 'neutral'] as const).map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setSentimentFilter(filter)}
-                  className="transition-all"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    backgroundColor: sentimentFilter === filter ? '#6366F1' : '#FFFFFF',
-                    color: sentimentFilter === filter ? '#FFFFFF' : '#6B7280',
-                    border: sentimentFilter === filter ? 'none' : '1px solid #E5E7EB',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (sentimentFilter !== filter) {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (sentimentFilter !== filter) {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FFFFFF';
-                    }
-                  }}
-                >
-                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </button>
+            <p className="text-[11px] font-bold text-fg-secondary uppercase tracking-widest mb-2">Sentiment</p>
+            <div className="flex flex-wrap gap-1.5">
+              {(['all', 'positive', 'negative', 'neutral'] as const).map(f => (
+                <FilterPill key={f} label={f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)} active={sentimentFilter === f} onClick={() => setSentimentFilter(f)} />
               ))}
             </div>
           </div>
-
-          {/* Quality Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Quality
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {(['all', 'ACCEPT', 'FLAG', 'REJECT'] as const).map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setQualityFilter(filter)}
-                  className="transition-all"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    backgroundColor: qualityFilter === filter ? '#6366F1' : '#FFFFFF',
-                    color: qualityFilter === filter ? '#FFFFFF' : '#6B7280',
-                    border: qualityFilter === filter ? 'none' : '1px solid #E5E7EB',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (qualityFilter !== filter) {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (qualityFilter !== filter) {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FFFFFF';
-                    }
-                  }}
-                >
-                  {filter === 'all' ? 'All' : filter === 'ACCEPT' ? 'Accepted' : filter === 'FLAG' ? 'Flagged' : 'Rejected'}
-                </button>
+            <p className="text-[11px] font-bold text-fg-secondary uppercase tracking-widest mb-2">Quality</p>
+            <div className="flex flex-wrap gap-1.5">
+              {(['all', 'ACCEPT', 'FLAG', 'REJECT'] as const).map(f => (
+                <FilterPill key={f} label={f === 'all' ? 'All' : f === 'ACCEPT' ? 'Accepted' : f === 'FLAG' ? 'Flagged' : 'Rejected'} active={qualityFilter === f} onClick={() => setQualityFilter(f)} />
               ))}
             </div>
           </div>
-
-          {/* Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Type
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {(['all', 'text', 'audio'] as const).map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setTypeFilter(filter)}
-                  className="transition-all"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    backgroundColor: typeFilter === filter ? '#6366F1' : '#FFFFFF',
-                    color: typeFilter === filter ? '#FFFFFF' : '#6B7280',
-                    border: typeFilter === filter ? 'none' : '1px solid #E5E7EB',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (typeFilter !== filter) {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (typeFilter !== filter) {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FFFFFF';
-                    }
-                  }}
-                >
-                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </button>
+            <p className="text-[11px] font-bold text-fg-secondary uppercase tracking-widest mb-2">Type</p>
+            <div className="flex flex-wrap gap-1.5">
+              {(['all', 'text', 'audio'] as const).map(f => (
+                <FilterPill key={f} label={f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)} active={typeFilter === f} onClick={() => setTypeFilter(f)} />
               ))}
             </div>
           </div>
         </div>
 
-        {/* Results Count */}
-        <div className="pt-4 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
-            Showing <span className="font-semibold text-gray-900">{filteredFeedbacks.length}</span> of{' '}
-            <span className="font-semibold text-gray-900">{feedbacks.length}</span> feedbacks
+        {/* Result count */}
+        <div className="pt-3 border-t border-card-border/50">
+          <p className="text-[13px] text-fg-secondary">
+            Showing <span className="font-bold text-fg">{filteredFeedbacks.length}</span> of{' '}
+            <span className="font-bold text-fg">{feedbacks.length}</span> responses
           </p>
         </div>
       </div>
 
+      {/* ── Content ───────────────────────────────────────────────────────────── */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-indigo-600" style={{ animation: 'spin 1s linear infinite' }} />
-        </div>
+        <PageLoader fullScreen={false} message="Loading feedback…" />
       ) : filteredFeedbacks.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-          <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p
-            className="text-lg font-bold text-gray-900 mb-2"
-            style={{ letterSpacing: '-0.02em' }}
-          >
-            {feedbacks.length === 0 ? 'No Feedback Yet' : 'No feedbacks match your filters'}
+        <div className="bg-card-bg border border-card-border rounded-[20px] p-14 text-center animate-fade-up">
+          <MessageSquare className="w-10 h-10 text-fg-secondary/30 mx-auto mb-4" />
+          <p className="text-[16px] font-bold text-fg mb-1.5 tracking-tight">
+            {feedbacks.length === 0 ? 'No Feedback Yet' : 'No Results'}
           </p>
-          <p className="text-gray-600">
-            {feedbacks.length === 0 ? 'No feedback has been submitted for this event yet.' : 'Try adjusting your search or filter criteria.'}
+          <p className="text-[13px] text-fg-secondary">
+            {feedbacks.length === 0
+              ? 'No feedback has been submitted for this event yet.'
+              : 'Try adjusting your search or filters.'}
           </p>
         </div>
+
       ) : (
-        <div className="space-y-4">
-          {filteredFeedbacks.map((feedback) => (
-            <div
-              key={feedback.id}
-              className="bg-white overflow-hidden transition-all"
-              style={{
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
-              }}
-            >
-              {/* Header */}
+        <div className="flex flex-col gap-3">
+          {filteredFeedbacks.map((feedback, index) => {
+            const isExpanded = expandedId === feedback.id;
+            const isFlag = feedback.quality_decision === 'FLAG';
+            const displayText = isFlag && feedback.normalized_text
+              ? feedback.normalized_text
+              : feedback.raw_text || '';
+
+            return (
               <div
-                className="cursor-pointer hover:bg-gray-50 transition-colors"
-                style={{ padding: '16px' }}
-                onClick={() => toggleExpanded(feedback.id)}
+                key={feedback.id}
+                className="bg-card-bg border border-card-border rounded-[16px] overflow-hidden transition-all duration-200 hover:border-accent/30 hover:shadow-md"
+                style={{ animationDelay: `${index * 40}ms` }}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-3">
-                      {feedback.input_type === 'text' ? (
-                        <MessageSquare className="w-5 h-5 text-gray-900 shrink-0" />
-                      ) : (
-                        <Mic className="w-5 h-5 text-gray-900 shrink-0" />
+                {/* Card header — clickable */}
+                <div
+                  className="cursor-pointer px-5 py-4 hover:bg-hover-overlay transition-colors"
+                  onClick={() => toggleExpanded(feedback.id)}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+
+                      {/* Top meta row */}
+                      <div className="flex flex-wrap items-center gap-2.5 mb-3">
+                        {/* Input type */}
+                        {feedback.input_type === 'text'
+                          ? <MessageSquare className="w-4 h-4 text-fg-secondary shrink-0" />
+                          : <Mic className="w-4 h-4 text-fg-secondary shrink-0" />}
+
+                        {/* Sentiment pill */}
+                        {!isFlag && (
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11.5px] font-bold border ${getSentimentClasses(feedback.sentiment || 'pending')}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${getSentimentDot(feedback.sentiment || '')}`} />
+                            {feedback.sentiment
+                              ? feedback.sentiment.charAt(0).toUpperCase() + feedback.sentiment.slice(1)
+                              : 'Pending'}
+                          </span>
+                        )}
+
+                        {/* Quality */}
+                        <span className="inline-flex items-center gap-1 text-[12px] text-fg-secondary">
+                          {getQualityIcon(feedback.quality_decision || 'ACCEPT')}
+                          <span className="capitalize">{feedback.quality_decision?.toLowerCase() || 'accepted'}</span>
+                        </span>
+
+                        {/* Date */}
+                        <span className="flex items-center gap-1 text-[12px] text-fg-secondary/60 ml-auto">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {new Date(feedback.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+
+                      {/* Preview text */}
+                      <p className="text-[14px] text-fg/80 leading-relaxed">
+                        {displayText.substring(0, 200)}{displayText.length > 200 ? '…' : ''}
+                      </p>
+
+                      {/* Confidence */}
+                      {feedback.confidence != null && !isFlag && (
+                        <p className="text-[12px] text-fg-secondary mt-2">
+                          Confidence: <span className="font-semibold text-fg">{(feedback.confidence * 100).toFixed(0)}%</span>
+                        </p>
                       )}
                     </div>
-                    <p className="leading-relaxed mb-3" style={{ fontSize: '15px', color: '#111827', lineHeight: 1.6, fontWeight: 400 }}>
-                      {(() => {
-                        // Show censored text for flagged feedbacks, otherwise raw text
-                        const displayText = feedback.quality_decision === 'FLAG' && feedback.normalized_text
-                          ? feedback.normalized_text
-                          : feedback.raw_text || '';
-                        return displayText.substring(0, 200) + (displayText.length > 200 ? '...' : '');
-                      })()}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-3">
-                      {/* Hide sentiment for flagged feedbacks */}
-                      {feedback.quality_decision !== 'FLAG' && (
-                        <span
-                          style={{
-                            padding: '4px 12px',
-                            borderRadius: '6px',
-                            fontSize: '13px',
-                            fontWeight: 600,
-                          }}
-                          className={`inline-flex items-center border ${getSentimentColor(
-                            feedback.sentiment || 'pending'
-                          )}`}
-                        >
-                          {feedback.sentiment ? feedback.sentiment.charAt(0).toUpperCase() + feedback.sentiment.slice(1) : 'Pending'}
-                        </span>
-                      )}
-                      <div className="flex items-center gap-1.5" style={{ fontSize: '13px', color: '#6B7280' }}>
-                        {getQualityIcon(feedback.quality_decision || 'ACCEPT')}
-                        <span className="capitalize">{feedback.quality_decision?.toLowerCase() || 'accepted'}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5" style={{ fontSize: '13px', color: '#9CA3AF' }}>
-                        <Calendar className="w-3.5 h-3.5" />
-                        {new Date(feedback.created_at).toLocaleDateString()}
-                      </div>
-                      <span style={{ fontSize: '13px', color: '#6B7280' }}>
-                        Confidence: {((feedback.confidence || 0) * 100).toFixed(0)}%
-                      </span>
+
+                    {/* Chevron */}
+                    <div className="text-fg-secondary/50 hover:text-fg-secondary transition-colors shrink-0 mt-0.5">
+                      {isExpanded
+                        ? <ChevronUp className="w-5 h-5" />
+                        : <ChevronDown className="w-5 h-5" />}
                     </div>
                   </div>
-                  <button className="transition-colors" style={{ color: '#9CA3AF' }} onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.color = '#6B7280'} onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.color = '#9CA3AF'}>
-                    {expandedId === feedback.id ? (
-                      <ChevronUp className="w-5 h-5" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5" />
+                </div>
+
+                {/* Expanded panel — smooth height transition via max-height */}
+                <div
+                  className="overflow-hidden transition-all duration-300 ease-in-out"
+                  style={{ maxHeight: isExpanded ? '9999px' : '0px' }}
+                >
+                  <div className="border-t border-card-border/50 bg-bg-secondary/40 px-5 py-5 flex flex-col gap-5">
+
+                    {/* Full text */}
+                    <div>
+                      <p className="text-[11px] font-bold text-fg-secondary uppercase tracking-widest mb-2">Full Response</p>
+                      <p className="text-[14px] text-fg/85 leading-[1.8] whitespace-pre-wrap">
+                        {isFlag && feedback.normalized_text ? feedback.normalized_text : feedback.raw_text}
+                      </p>
+                    </div>
+
+                    {/* Audio */}
+                    {feedback.input_type === 'audio' && feedback.audio_path && (
+                      <div>
+                        <p className="text-[11px] font-bold text-fg-secondary uppercase tracking-widest mb-2">Audio Recording</p>
+                        <audio
+                          controls
+                          className="w-full rounded-lg"
+                          onPlay={() => handleAudioPlay(feedback.id)}
+                          onPause={() => handleAudioPause(feedback.id)}
+                        >
+                          <source src={feedback.audio_path} type="audio/webm" />
+                        </audio>
+                      </div>
                     )}
-                  </button>
+
+                    {/* Quality flags */}
+                    {feedback.quality_flags && (
+                      <div>
+                        <p className="text-[11px] font-bold text-amber-500 uppercase tracking-widest mb-2">Quality Flags</p>
+                        <div className="flex flex-wrap gap-2">
+                          {(() => {
+                            try {
+                              const flags = typeof feedback.quality_flags === 'string'
+                                ? JSON.parse(feedback.quality_flags)
+                                : feedback.quality_flags;
+                              return (Array.isArray(flags) ? flags : []).map((flag: string, i: number) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 border border-amber-500/20 text-amber-500"
+                                >
+                                  <AlertTriangle className="w-3 h-3" />
+                                  {flag.replace(/_/g, ' ')}
+                                </span>
+                              ));
+                            } catch {
+                              return <span className="text-[12px] text-fg-secondary">{feedback.quality_flags}</span>;
+                            }
+                          })()}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Metadata grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {feedback.quality_decision !== 'FLAG' && (
+                        <>
+                          <div className="bg-card-bg border border-card-border rounded-[12px] p-3">
+                            <p className="text-[11px] font-bold text-fg-secondary uppercase tracking-widest mb-1">Sentiment</p>
+                            <p className="text-[13px] font-semibold text-fg capitalize">{feedback.sentiment || 'Pending'}</p>
+                          </div>
+                          <div className="bg-card-bg border border-card-border rounded-[12px] p-3">
+                            <p className="text-[11px] font-bold text-fg-secondary uppercase tracking-widest mb-1">Confidence</p>
+                            <p className="text-[13px] font-semibold text-fg">
+                              {feedback.confidence ? `${(feedback.confidence * 100).toFixed(1)}%` : 'Pending'}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                      <div className="bg-card-bg border border-card-border rounded-[12px] p-3">
+                        <p className="text-[11px] font-bold text-fg-secondary uppercase tracking-widest mb-1">Quality</p>
+                        <p className="text-[13px] font-semibold text-fg capitalize">{feedback.quality_decision?.toLowerCase() || 'accepted'}</p>
+                      </div>
+                      <div className="bg-card-bg border border-card-border rounded-[12px] p-3">
+                        <p className="text-[11px] font-bold text-fg-secondary uppercase tracking-widest mb-1">Type</p>
+                        <p className="text-[13px] font-semibold text-fg capitalize">{feedback.input_type}</p>
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
               </div>
-
-              {/* Expanded Content */}
-              {expandedId === feedback.id && (
-                <div className="border-t space-y-4" style={{ padding: '16px', borderTopColor: '#E5E7EB', backgroundColor: '#F9FAFB' }}>
-                  {/* Full Text */}
-                  <div>
-                    <h4 className="mb-2" style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', marginBottom: '8px' }}>
-                      Feedback Text
-                    </h4>
-                    <p className="whitespace-pre-wrap" style={{ fontSize: '15px', color: '#111827', lineHeight: 1.6 }}>
-                      {/* Show censored text for flagged feedbacks */}
-                      {feedback.quality_decision === 'FLAG' && feedback.normalized_text
-                        ? feedback.normalized_text
-                        : feedback.raw_text}
-                    </p>
-                  </div>
-
-                  {/* Audio Player */}
-                  {feedback.input_type === 'audio' && feedback.audio_path && (
-                    <div>
-                      <h4 className="mb-2" style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', marginBottom: '8px' }}>
-                        Audio Recording
-                      </h4>
-                      <audio
-                        controls
-                        className="w-full"
-                        onPlay={() => handleAudioPlay(feedback.id)}
-                        onPause={() => handleAudioPause(feedback.id)}
-                      >
-                        <source src={feedback.audio_path} type="audio/webm" />
-                        Your browser does not support audio playback.
-                      </audio>
-                    </div>
-                  )}
-
-                  {/* Quality Flags */}
-                  {feedback.quality_flags && (
-                    <div>
-                      <h4 className="mb-2" style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', marginBottom: '8px' }}>
-                        Quality Flags
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {(() => {
-                          try {
-                            const flags = typeof feedback.quality_flags === 'string' 
-                              ? JSON.parse(feedback.quality_flags)
-                              : feedback.quality_flags;
-                            return (Array.isArray(flags) ? flags : []).map((flag, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200"
-                              >
-                                <AlertTriangle className="w-3.5 h-3.5" />
-                                {flag.replace(/_/g, ' ')}
-                              </span>
-                            ));
-                          } catch {
-                            return (
-                              <span className="text-xs text-gray-600">
-                                {feedback.quality_flags}
-                              </span>
-                            );
-                          }
-                        })()}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Metadata Grid */}
-                  <div className="rounded-lg" style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px' }}>
-                    <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: '16px' }}>
-                    {/* Hide sentiment for flagged feedbacks */}
-                    {feedback.quality_decision !== 'FLAG' && (
-                      <>
-                        <div className="bg-white rounded-lg" style={{ padding: '12px', border: '1px solid #E5E7EB' }}>
-                          <p className="mb-1" style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sentiment</p>
-                          <p className="capitalize" style={{ fontSize: '14px', color: '#111827', fontWeight: 500 }}>
-                            {feedback.sentiment || 'Pending'}
-                          </p>
-                        </div>
-                        <div className="bg-white rounded-lg" style={{ padding: '12px', border: '1px solid #E5E7EB' }}>
-                          <p className="mb-1" style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Confidence</p>
-                          <p style={{ fontSize: '14px', color: '#111827', fontWeight: 500 }}>
-                            {feedback.confidence ? `${(feedback.confidence * 100).toFixed(1)}%` : 'Pending'}
-                          </p>
-                        </div>
-                      </>
-                    )}
-                    <div className="bg-white rounded-lg" style={{ padding: '12px', border: '1px solid #E5E7EB' }}>
-                      <p className="mb-1" style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quality</p>
-                      <p className="capitalize" style={{ fontSize: '14px', color: '#111827', fontWeight: 500 }}>
-                        {feedback.quality_decision?.toLowerCase() || 'accepted'}
-                      </p>
-                    </div>
-                    <div className="bg-white rounded-lg" style={{ padding: '12px', border: '1px solid #E5E7EB' }}>
-                      <p className="mb-1" style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</p>
-                      <p className="capitalize" style={{ fontSize: '14px', color: '#111827', fontWeight: 500 }}>
-                        {feedback.input_type}
-                      </p>
-                    </div>
-                  </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
