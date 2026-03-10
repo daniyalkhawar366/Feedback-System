@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
-import { Activity, MessageSquare, Mic, AlertCircle } from 'lucide-react';
+import { MessageSquare, Mic, AlertCircle } from 'lucide-react';
+import { BrandLogo } from '@/components/BrandLogo';
 import TextFeedbackInput from '@/components/feedback/TextFeedbackInput';
 import VoiceFeedbackInput from '@/components/feedback/VoiceFeedbackInput';
 import SuccessModal from '@/components/feedback/SuccessModal';
@@ -52,10 +53,10 @@ export default function PublicFeedbackPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
         <div className="relative flex items-center justify-center mb-6">
-          <span className="absolute w-16 h-16 rounded-[18px] bg-[#44bea9]/20 animate-ping" style={{ animationDuration: '1.6s' }} />
-          <span className="absolute w-14 h-14 rounded-[16px] bg-[#44bea9]/10" />
-          <div className="relative w-12 h-12 bg-gradient-to-br from-[#44bea9] to-[#328f7f] rounded-[13px] flex items-center justify-center shadow-lg border border-[#44bea9]/20">
-            <Activity className="w-6 h-6 text-white" />
+          <span className="absolute w-20 h-20 rounded-[18px] bg-[#44bea9]/20 animate-ping" style={{ animationDuration: '1.6s' }} />
+          <span className="absolute w-16 h-16 rounded-[16px] bg-[#44bea9]/10" />
+          <div className="relative z-10 flex items-center justify-center bg-white p-2 rounded-[14px] shadow-lg border border-[#44bea9]/20">
+            <BrandLogo size={40} showText={false} />
           </div>
         </div>
         <p className="text-slate-500 font-medium tracking-wide">Loading event details…</p>
@@ -95,11 +96,8 @@ export default function PublicFeedbackPage() {
 
       {/* Branded Header */}
       <header className="relative z-10 pt-8 pb-4 px-6 flex justify-center">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-[#44bea9] to-[#328f7f] rounded-[8px] flex items-center justify-center shadow-sm">
-            <Activity className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-[17px] font-bold tracking-tight text-slate-800">Ripple</span>
+        <div className="flex items-center drop-shadow-sm">
+          <BrandLogo size={32} />
         </div>
       </header>
 

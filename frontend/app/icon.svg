@@ -1,10 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
     <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#44bea9" />
       <stop offset="100%" stop-color="#328f7f" />
     </linearGradient>
   </defs>
-  <rect width="32" height="32" rx="8" fill="url(#grad)" />
-  <path d="M26 16h-4l-3 9L12 7l-3 9H6" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+  <g fill="url(#grad)">
+    <!-- Finders -->
+    <path fill-rule="evenodd" d="M10 10 h30 v30 h-30 z m10 10 v10 h10 v-10 z" />
+    <path fill-rule="evenodd" d="M10 60 h30 v30 h-30 z m10 10 v10 h10 v-10 z" />
+
+    <!-- QR Blocks -->
+    <rect x="10" y="45" width="10" height="10" />
+    <rect x="25" y="45" width="10" height="10" />
+
+    <rect x="45" y="60" width="10" height="10" />
+    <rect x="45" y="75" width="10" height="10" />
+    <rect x="60" y="60" width="10" height="10" />
+    <rect x="60" y="75" width="10" height="10" />
+    <rect x="75" y="60" width="10" height="10" />
+    <rect x="75" y="75" width="10" height="10" />
+
+    <rect x="45" y="10" width="10" height="10" />
+    <rect x="45" y="25" width="10" height="10" />
+    <rect x="45" y="40" width="10" height="10" />
+    <rect x="60" y="15" width="10" height="10" />
+    <rect x="60" y="30" width="10" height="10" />
+    <rect x="60" y="45" width="10" height="10" />
+  </g>
+
+  <!-- Circuit Traces -->
+  <g fill="none" stroke="url(#grad)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M55 15 h10 l10 -10 h12" />
+    <path d="M70 20 h5 l10 -10 h9" />
+    <path d="M55 30 h15 l10 10 h14" />
+    <path d="M70 35 h5 l5 -5 h9" />
+    <path d="M70 50 h19" />
+  </g>
+
+  <!-- Circuit End Nodes (Circles) -->
+  <g fill="#fff" stroke="url(#grad)" stroke-width="3">
+    <circle cx="87" cy="5" r="4" />
+    <circle cx="94" cy="10" r="4" />
+    <circle cx="94" cy="40" r="4" />
+    <circle cx="89" cy="30" r="4" />
+    <circle cx="89" cy="50" r="4" />
+  </g>
 </svg>

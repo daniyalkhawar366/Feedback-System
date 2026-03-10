@@ -18,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ripple",
+  title: "QRAI",
   description: "Collect and analyze feedback intelligently",
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Activity } from 'lucide-react';
+import { BrandLogo } from '@/components/BrandLogo';
 
 interface PageLoaderProps {
     message?: string;
@@ -18,24 +18,26 @@ export default function PageLoader({ message = 'Loading…', fullScreen = true }
 
     return (
         <div className={containerClass}>
-            {/* Ripple logo with pulsing rings */}
+            {/* Logo with pulsing rings */}
             <div className="relative flex items-center justify-center">
                 {/* Outer pulse ring */}
                 <span
-                    className="absolute w-16 h-16 rounded-[18px] bg-accent/20 animate-ping"
+                    className="absolute w-20 h-20 rounded-[18px] bg-accent/20 animate-ping"
                     style={{ animationDuration: '1.6s' }}
                 />
                 {/* Inner ring */}
-                <span className="absolute w-14 h-14 rounded-[16px] bg-accent/10" />
-                {/* Logo square */}
-                <div className="relative w-12 h-12 bg-gradient-to-br from-accent to-accent-light rounded-[13px] flex items-center justify-center shadow-lg border border-accent/20">
-                    <Activity className="w-6 h-6 text-white" />
+                <span className="absolute w-16 h-16 rounded-[16px] bg-accent/10" />
+                {/* Brand Logo inside */}
+                <div className="relative z-10 drop-shadow-lg flex items-center justify-center bg-white/5 p-1 rounded-xl glass-panel">
+                    <BrandLogo size={56} showText={false} />
                 </div>
             </div>
 
             {/* Brand name */}
-            <div className="flex flex-col items-center gap-1">
-                <span className="text-[15px] font-bold text-fg tracking-tight">Ripple</span>
+            <div className="flex flex-col items-center gap-1 mt-2">
+                <span className="text-[20px] font-bold text-fg tracking-tight">
+                    QR<span className="bg-gradient-to-br from-[#44bea9] to-[#328f7f] bg-clip-text text-transparent">AI</span>
+                </span>
                 <span className="text-[13px] text-fg-secondary">{message}</span>
             </div>
         </div>

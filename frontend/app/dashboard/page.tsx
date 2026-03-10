@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, LogOut, ClipboardList, Activity, Users, Settings } from 'lucide-react';
+import { Plus, LogOut, ClipboardList, Users, Settings } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { BrandLogo } from '@/components/BrandLogo';
 import EventCard from '@/components/dashboard/EventCard';
 import CreateEventModal from '@/components/dashboard/CreateEventModal';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -89,8 +90,8 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 {/* Logo & User Info */}
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-accent to-accent-light rounded-[10px] flex items-center justify-center shadow-md text-white border border-accent/20">
-                    <Activity className="w-5 h-5" />
+                  <div className="flex items-center justify-center p-0.5 rounded-lg bg-white/5 drop-shadow">
+                    <BrandLogo size={32} showText={false} />
                   </div>
                   <div>
                     <h1 className="text-[15px] font-semibold tracking-wide leading-tight">

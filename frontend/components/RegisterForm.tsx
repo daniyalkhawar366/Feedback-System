@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/hooks/useAuth';
+import { BrandLogo } from '@/components/BrandLogo';
 import axios from 'axios';
 
 interface RegisterFormProps {
@@ -146,34 +147,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     >
       {/* ── Brand mark ── */}
       <div style={{ marginBottom: 24, textAlign: 'center' }}>
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            background: 'linear-gradient(135deg, #44bea9 0%, #2b8c7c 100%)',
-            borderRadius: 12,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 12,
-            boxShadow: '0 4px 12px rgba(68, 190, 169, 0.3)',
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 12c-2.66 0-4-3-4-3s-1.34 3-4 3-4-3-4-3-1.34 3-4 3" />
-          </svg>
-        </div>
-        <div
-          style={{
-            fontSize: 32,
-            fontWeight: 700,
-            color: '#111827',
-            letterSpacing: '-0.04em',
-            lineHeight: 1.1,
-          }}
-        >
-          Ripple
-        </div>
+        <BrandLogo size={60} />
       </div>
 
       {/* ── Card ── */}

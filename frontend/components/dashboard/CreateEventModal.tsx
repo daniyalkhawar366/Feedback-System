@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import api from '@/utils/api';
 import type { EventCreate } from '@/types/api';
+import { AppleDateTimePicker, AppleDatePicker } from '@/components/ui/AppleDateTimePicker';
+import { format, formatISO } from 'date-fns';
 
 interface CreateEventModalProps {
   isOpen: boolean;
@@ -12,12 +14,18 @@ interface CreateEventModalProps {
 }
 
 export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateEventModalProps) {
-  const [formData, setFormData] = useState<EventCreate>({
+  const [formData, setFormData] = useState<{
+    title: string;
+    description: string;
+    event_date: Date | null;
+    feedback_open_at: Date | null;
+    feedback_close_at: Date | null;
+  }>({
     title: '',
     description: '',
-    event_date: '',
-    feedback_open_at: '',
-    feedback_close_at: '',
+    event_date: null,
+    feedback_open_at: null,
+    feedback_close_at: null,
   });
   const [errors, setErrors] = useState<Partial<Record<keyof EventCreate, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,16 +71,16 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
     }
 
     if (formData.event_date && formData.feedback_open_at) {
-      if (formData.feedback_open_at < formData.event_date) {
+      // Compare ignoring time for the event date if we want
+      const eventStart = new Date(formData.event_date);
+      eventStart.setHours(0, 0, 0, 0);
+      if (formData.feedback_open_at < eventStart) {
         newErrors.feedback_open_at = 'Feedback cannot open before the event date';
       }
     }
 
     if (formData.feedback_open_at && formData.feedback_close_at) {
-      const openAt = new Date(formData.feedback_open_at);
-      const closeAt = new Date(formData.feedback_close_at);
-
-      if (closeAt <= openAt) {
+      if (formData.feedback_close_at <= formData.feedback_open_at) {
         newErrors.feedback_close_at = 'Closing time must be after opening time';
       }
     }
@@ -92,15 +100,15 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
       const payload: EventCreate = {
         title: formData.title.trim(),
         description: formData.description?.trim() || undefined,
-        event_date: formData.event_date || undefined,
-        feedback_open_at: formData.feedback_open_at || undefined,
-        feedback_close_at: formData.feedback_close_at || undefined,
+        event_date: formData.event_date ? format(formData.event_date, 'yyyy-MM-dd') : undefined,
+        feedback_open_at: formData.feedback_open_at ? format(formData.feedback_open_at, "yyyy-MM-dd'T'HH:mm:ss") : undefined,
+        feedback_close_at: formData.feedback_close_at ? format(formData.feedback_close_at, "yyyy-MM-dd'T'HH:mm:ss") : undefined,
       };
 
       await api.post('/events/', payload);
 
       // Reset form
-      setFormData({ title: '', description: '', event_date: '', feedback_open_at: '', feedback_close_at: '' });
+      setFormData({ title: '', description: '', event_date: null, feedback_open_at: null, feedback_close_at: null });
       setErrors({});
       onSuccess();
     } catch (error: any) {
@@ -114,7 +122,7 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
 
   const handleClose = () => {
     if (!isSubmitting) {
-      setFormData({ title: '', description: '', event_date: '', feedback_open_at: '', feedback_close_at: '' });
+      setFormData({ title: '', description: '', event_date: null, feedback_open_at: null, feedback_close_at: null });
       setErrors({});
       onClose();
     }
@@ -196,20 +204,18 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
           </div>
 
           {/* Event Date */}
-          <div>
-            <label className="block mb-2 text-[14px] font-semibold text-fg-secondary">
-              Event Date <span className="text-danger">*</span>
-            </label>
-            <input
-              id="event_date"
-              type="date"
+          <div className="flex flex-col gap-1.5">
+            <AppleDatePicker
+              label="Event Date"
               value={formData.event_date}
-              onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-              className={`w-full px-4 py-3 rounded-lg transition-colors bg-bg text-fg text-[15px] outline-none border ${errors.event_date ? 'border-danger' : 'border-card-border/50 hover:border-accent/50 focus:border-accent'}`}
+              onChange={(date: Date | null) => {
+                setFormData({ ...formData, event_date: date });
+                setErrors({ ...errors, event_date: undefined });
+              }}
               disabled={isSubmitting}
             />
             {errors.event_date && (
-              <p className="mt-1 text-[13px] text-danger">{errors.event_date}</p>
+              <p className="px-1 text-[13px] text-danger">{errors.event_date}</p>
             )}
           </div>
 
@@ -222,46 +228,37 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }: CreateE
               Set when attendees can submit feedback.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-3">
               {/* Feedback Open At */}
-              <div>
-                <label className="block mb-2 text-[13px] font-semibold text-fg-secondary">
-                  Opens At <span className="text-danger">*</span>
-                </label>
-                <input
-                  id="feedback_open_at"
-                  type="datetime-local"
+              <div className="flex flex-col gap-1.5">
+                <AppleDateTimePicker
+                  label="Opens At"
                   value={formData.feedback_open_at}
-                  onChange={(e) => {
-                    setFormData({ ...formData, feedback_open_at: e.target.value });
+                  onChange={(date: Date | null) => {
+                    setFormData({ ...formData, feedback_open_at: date });
                     setErrors({ ...errors, feedback_open_at: undefined });
                   }}
-                  className={`w-full px-3 py-2.5 rounded-lg transition-colors bg-bg text-fg text-[14px] outline-none border ${errors.feedback_open_at ? 'border-danger' : 'border-card-border/50 hover:border-accent/50 focus:border-accent'}`}
                   disabled={isSubmitting}
                 />
                 {errors.feedback_open_at && (
-                  <p className="mt-1 text-[12px] text-danger">{errors.feedback_open_at}</p>
+                  <p className="px-1 text-[12px] text-danger">{errors.feedback_open_at}</p>
                 )}
               </div>
 
               {/* Feedback Close At */}
-              <div>
-                <label className="block mb-2 text-[13px] font-semibold text-fg-secondary">
-                  Closes At <span className="text-danger">*</span>
-                </label>
-                <input
-                  id="feedback_close_at"
-                  type="datetime-local"
+              <div className="flex flex-col gap-1.5">
+                <AppleDateTimePicker
+                  label="Closes At"
                   value={formData.feedback_close_at}
-                  onChange={(e) => {
-                    setFormData({ ...formData, feedback_close_at: e.target.value });
+                  onChange={(date: Date | null) => {
+                    setFormData({ ...formData, feedback_close_at: date });
                     setErrors({ ...errors, feedback_close_at: undefined });
                   }}
-                  className={`w-full px-3 py-2.5 rounded-lg transition-colors bg-bg text-fg text-[14px] outline-none border ${errors.feedback_close_at ? 'border-danger' : 'border-card-border/50 hover:border-accent/50 focus:border-accent'}`}
+                  minDate={formData.feedback_open_at || undefined}
                   disabled={isSubmitting}
                 />
                 {errors.feedback_close_at && (
-                  <p className="mt-1 text-[12px] text-danger">{errors.feedback_close_at}</p>
+                  <p className="px-1 text-[12px] text-danger">{errors.feedback_close_at}</p>
                 )}
               </div>
             </div>
