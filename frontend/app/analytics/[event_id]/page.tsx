@@ -57,7 +57,7 @@ export default function AnalyticsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex h-screen bg-bg text-fg overflow-hidden relative selection:bg-accent-glow">
+      <div className="flex flex-col md:flex-row h-[100dvh] w-full overflow-hidden bg-bg text-fg relative selection:bg-accent-glow">
         {/* Ambient Effects */}
         <div className="fixed inset-0 pointer-events-none z-0">
           <div className="bg-noise" />
@@ -66,21 +66,21 @@ export default function AnalyticsPage() {
         </div>
 
         {/* --- Sidebar Navigation --- */}
-        <aside className="relative z-20 w-[260px] flex-shrink-0 flex flex-col border-r border-card-border/50 bg-nav-bg backdrop-blur-xl animate-fade-up">
+        <aside className="relative z-20 w-full md:w-[260px] flex-shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-card-border/50 bg-nav-bg backdrop-blur-xl md:h-[100dvh]">
           {/* Top Info section */}
-          <div className="flex flex-col p-6 border-b border-card-border/50">
+          <div className="flex flex-col p-4 md:p-6 border-b border-card-border/50">
             <button
               onClick={() => router.push('/dashboard')}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-card-bg border border-card-border rounded-lg text-[13px] font-bold text-fg shadow-sm hover:border-accent/40 hover:text-accent transition-all mb-6 w-full"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-card-bg border border-card-border rounded-lg text-[13px] font-bold text-fg shadow-sm hover:border-accent/40 hover:text-accent transition-all mb-4 md:mb-6 w-full"
             >
               <ArrowLeft className="w-4 h-4" /> Back to Dashboard
             </button>
-            <h1 className="text-[18px] font-bold text-fg tracking-tight leading-tight">
+            <h1 className="text-[16px] md:text-[18px] font-bold text-fg tracking-tight leading-tight">
               {event?.title || 'Event Analytics'}
             </h1>
 
             {/* Status / Date logic */}
-            <div className="flex flex-col mt-4 gap-2">
+            <div className="flex md:flex-col mt-2 md:mt-4 gap-2 items-center md:items-start flex-wrap">
               {event?.event_date && (
                 <div className="text-[12px] font-semibold text-fg-secondary tracking-wide uppercase">
                   {new Date(event.event_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -118,8 +118,8 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Nav List */}
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-1.5">
-            <div className="text-[11px] font-bold uppercase tracking-widest text-fg-secondary/50 px-3 mb-2 mt-2">
+          <div className="flex md:flex-col overflow-x-auto md:overflow-y-auto p-2 md:p-4 gap-1.5 md:flex-1 flex-nowrap shrink-0 snap-x">
+            <div className="hidden md:block text-[11px] font-bold uppercase tracking-widest text-fg-secondary/50 px-3 mb-2 mt-2">
               Analytics Menu
             </div>
             {tabs.map((tab) => {
@@ -130,7 +130,7 @@ export default function AnalyticsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[14px] font-semibold transition-all ${isActive
+                  className={`flex shrink-0 items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2.5 rounded-[12px] text-[13px] md:text-[14px] font-semibold transition-all snap-start ${isActive
                     ? 'bg-accent/10 text-accent border border-accent/20'
                     : 'text-fg-secondary hover:text-fg hover:bg-bg-secondary border border-transparent'
                     }`}
@@ -142,14 +142,14 @@ export default function AnalyticsPage() {
             })}
           </div>
 
-          <div className="p-4 border-t border-card-border/50 flex justify-between items-center">
+          <div className="hidden md:flex p-4 border-t border-card-border/50 justify-between items-center">
             <span className="text-[12px] font-medium text-fg-secondary">Theme Preference</span>
             <ThemeToggle />
           </div>
         </aside>
 
         {/* --- Main Content Area --- */}
-        <main className="relative z-10 flex-1 h-screen overflow-y-auto p-8 animate-fade-up stagger-2">
+        <main className="relative z-10 flex-1 md:h-[100dvh] w-full overflow-y-auto p-4 md:p-8 animate-fade-up stagger-2">
           <div className="max-w-5xl mx-auto w-full pb-32">
             {activeTab === 'overview' && <OverviewTab eventId={eventId} feedbackOpenAt={event?.feedback_open_at} feedbackCloseAt={event?.feedback_close_at} />}
             {activeTab === 'insights' && <InsightsTab eventId={eventId} />}
